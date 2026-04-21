@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+}
+
+enum ClientType {
+  COMPANY
+  SCHOOL
+  PERSON
+}
+
+enum EventStatus {
+  DRAFT
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum DiscountType {
+  NONE
+  ABSOLUTE
+  PERCENT
+}
+
+enum DocumentType {
+  CONTRACT
+}
+
+enum DocumentStatus {
+  GENERATED
+  ARCHIVED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  fullName      String
+  role          UserRole
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  createdEvents Event[]   @relation("EventCreatedBy")
+  documents     Document[] @relation("DocumentGeneratedBy")
+}
+
+model Client {
+  id         String          @id @default(cuid())
+  type       ClientType
+  name       String
+  ico        String?
+  dic        String?
+  street     String?
+  city       String?
+  postalCode String?
+  country    String?
+  note       String?
+  isActive   Boolean         @default(true)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  contacts   ContactPerson[]
+  events     Event[]
+}
+
+model ContactPerson {
+  id         String   @id @default(cuid())
+  clientId   String
+  firstName  String
+  lastName   String
+  email      String?
+  phone      String?
+  roleLabel  String?
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  client     Client   @relation(fields: [clientId], references: [id])
+  events     Event[]  @relation("EventPrimaryContact")
+
+  @@index([clientId])
+}
+
+model Event {
+  id               String         @id @default(cuid())
+  title            String
+  eventType        String
+  status           EventStatus    @default(DRAFT)
+  dateStart        DateTime
+  dateEnd          DateTime?
+  venueName        String?
+  clientId         String
+  primaryContactId String?
+  internalNote     String?
+  contractNote     String?
+  createdByUserId  String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  client           Client         @relation(fields: [clientId], references: [id])
+  primaryContact   ContactPerson? @relation("EventPrimaryContact", fields: [primaryContactId], references: [id])
+  createdByUser    User           @relation("EventCreatedBy", fields: [createdByUserId], references: [id])
+
+  serviceItems     EventServiceItem[]
+  documents        Document[]
+
+  @@index([clientId])
+  @@index([primaryContactId])
+  @@index([createdByUserId])
+}
+
+model ServiceCatalogItem {
+  id               String    @id @default(cuid())
+  name             String
+  defaultUnitPrice Decimal   @db.Decimal(10, 2)
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  eventItems       EventServiceItem[]
+}
+
+model EventServiceItem {
+  id                   String        @id @default(cuid())
+  eventId              String
+  serviceCatalogItemId String?
+  customName           String
+  quantity             Decimal       @db.Decimal(10, 2)
+  unitPrice            Decimal       @db.Decimal(10, 2)
+  discountType         DiscountType  @default(NONE)
+  discountValue        Decimal       @default(0) @db.Decimal(10, 2)
+  totalPrice           Decimal       @db.Decimal(10, 2)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  event                Event              @relation(fields: [eventId], references: [id])
+  serviceCatalogItem   ServiceCatalogItem? @relation(fields: [serviceCatalogItemId], references: [id])
+
+  @@index([eventId])
+  @@index([serviceCatalogItemId])
+}
+
+model Document {
+  id                String          @id @default(cuid())
+  eventId           String
+  type              DocumentType
+  versionNumber     Int
+  fileName          String
+  storagePath       String
+  snapshotJson      Json
+  generatedByUserId String
+  createdAt         DateTime        @default(now())
+
+  event             Event           @relation(fields: [eventId], references: [id])
+  generatedByUser   User            @relation("DocumentGeneratedBy", fields: [generatedByUserId], references: [id])
+
+  @@unique([eventId, type, versionNumber])
+  @@index([eventId])
+  @@index([generatedByUserId])
+}
