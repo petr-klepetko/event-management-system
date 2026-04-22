@@ -1,6 +1,7 @@
 import { getClients } from '@/modules/clients/client.service'
 import { createClientAction } from './actions'
 import { mapClientTypeToLabel } from '@/modules/clients/client.utils'
+import Link from 'next/link'
 
 export default async function ClientsPage() {
   const clients = await getClients()
@@ -124,7 +125,14 @@ export default async function ClientsPage() {
               <tbody>
                 {clients.map((client) => (
                   <tr key={client.id} className="border-b">
-                    <td className="py-2 pr-4">{client.name}</td>
+                    <td className="py-2 pr-4">
+                      <Link
+                        href={`/clients/${client.id}`}
+                        className="underline underline-offset-4"
+                      >
+                        {client.name}
+                      </Link>
+                    </td>
                     <td className="py-2 pr-4">
                       {mapClientTypeToLabel(client.type)}
                     </td>

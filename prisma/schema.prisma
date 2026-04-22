@@ -102,13 +102,13 @@ model Event {
   primaryContactId String?
   internalNote     String?
   contractNote     String?
-  createdByUserId  String
+  createdByUserId  String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
   client           Client         @relation(fields: [clientId], references: [id])
   primaryContact   ContactPerson? @relation("EventPrimaryContact", fields: [primaryContactId], references: [id])
-  createdByUser    User           @relation("EventCreatedBy", fields: [createdByUserId], references: [id])
+  createdByUser    User?          @relation("EventCreatedBy", fields: [createdByUserId], references: [id])
 
   serviceItems     EventServiceItem[]
   documents        Document[]
