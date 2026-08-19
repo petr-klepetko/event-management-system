@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { createContact } from '@/modules/clients/client.service'
 
 type CreateContactActionArgs = {
@@ -11,30 +12,47 @@ export async function createContactAction(
     args: CreateContactActionArgs,
     formData: FormData
 ) {
-    const firstName = String(formData.get('firstName') ?? '').trim()
-    const lastName = String(formData.get('lastName') ?? '').trim()
-    const email = String(formData.get('email') ?? '').trim()
-    const phone = String(formData.get('phone') ?? '').trim()
-    const roleLabel = String(formData.get('roleLabel') ?? '').trim()
-    const isPrimary = formData.get('isPrimary') === 'on'
+    let errorMessage: string | null = null
 
-    if (!firstName) {
-        throw new Error('First name is required.')
+    try {
+        const firstName = String(formData.get('firstName') ?? '').trim()
+        const lastName = String(formData.get('lastName') ?? '').trim()
+        const email = String(formData.get('email') ?? '').trim()
+        const phone = String(formData.get('phone') ?? '').trim()
+        const roleLabel = String(formData.get('roleLabel') ?? '').trim()
+        const isPrimary = formData.get('isPrimary') === 'on'
+
+        if (!firstName) {
+            throw new Error('Jméno je povinné.')
+        }
+
+        if (!lastName) {
+            throw new Error('Příjmení je povinné.')
+        }
+
+        await createContact({
+            clientId: args.clientId,
+            firstName,
+            lastName,
+            email: email || null,
+            phone: phone || null,
+            roleLabel: roleLabel || null,
+            isPrimary,
+        })
+
+        revalidatePath(`/clients/${args.clientId}`)
+    } catch (error) {
+        errorMessage =
+            error instanceof Error
+                ? error.message
+                : 'Kontakt se nepodařilo přidat.'
     }
 
-    if (!lastName) {
-        throw new Error('Last name is required.')
+    if (errorMessage) {
+        redirect(
+            `/clients/${args.clientId}?error=${encodeURIComponent(errorMessage)}`
+        )
     }
 
-    await createContact({
-        clientId: args.clientId,
-        firstName,
-        lastName,
-        email: email || null,
-        phone: phone || null,
-        roleLabel: roleLabel || null,
-        isPrimary,
-    })
-
-    revalidatePath(`/clients/${args.clientId}`)
+    redirect(`/clients/${args.clientId}?success=KontaktBylPridan`)
 }

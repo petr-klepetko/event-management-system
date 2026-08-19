@@ -1,0 +1,174 @@
+import { notFound } from 'next/navigation'
+import {
+    getEventServiceItemById,
+    getServiceCatalogItemsForEventServiceEdit,
+} from '@/modules/event-services/event-service.service'
+import { updateEventServiceItemAction } from './actions'
+import { buttonClass, inputClass, optionClass } from '@/lib/ui/styles'
+import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+
+type EditEventServiceItemPageProps = {
+    params: Promise<{
+        id: string
+        serviceItemId: string
+    }>
+    searchParams: Promise<{
+        error?: string
+    }>
+}
+
+function formatPrice(value: string | number) {
+    const amount = typeof value === 'number' ? value : Number(value)
+
+    return new Intl.NumberFormat('cs-CZ', {
+        style: 'currency',
+        currency: 'CZK',
+    }).format(amount)
+}
+
+export default async function EditEventServiceItemPage({
+    params,
+    searchParams,
+}: EditEventServiceItemPageProps) {
+    const { id: eventId, serviceItemId } = await params
+    const { error } = await searchParams
+
+    const serviceItem = await getEventServiceItemById(serviceItemId)
+
+    if (!serviceItem) {
+        notFound()
+    }
+
+    if (serviceItem.event.id !== eventId) {
+        notFound()
+    }
+
+    const serviceCatalogItems = await getServiceCatalogItemsForEventServiceEdit(
+        serviceItem.serviceCatalogItemId
+    )
+
+    const updateAction = updateEventServiceItemAction.bind(null, {
+        eventId,
+        serviceItemId,
+    })
+
+    return (
+        <main className="mx-auto max-w-4xl p-8">
+            <Breadcrumbs
+                items={[
+                    { label: 'Domů', href: '/' },
+                    { label: 'Akce', href: '/events' },
+                    {
+                        label: serviceItem.event.title,
+                        href: `/events/${eventId}`,
+                    },
+                    {
+                        label: 'Upravit službu',
+                        href: `/events/${eventId}/services/${serviceItemId}/edit`,
+                    },
+                ]}
+            />
+
+            <div>
+                <h1 className="text-3xl font-bold">Upravit službu na akci</h1>
+                <p className="mt-2 text-sm text-gray-400">
+                    Akce: {serviceItem.event.title}
+                </p>
+            </div>
+
+            <section className="mt-8 rounded-xl border p-6">
+                <h2 className="text-xl font-semibold">Detail služby</h2>
+
+                {error ? (
+                    <p className="mt-4 rounded-md border border-red-500/40 px-4 py-3 text-sm text-red-300">
+                        {error}
+                    </p>
+                ) : null}
+
+                <form action={updateAction} className="mt-4 grid gap-4">
+                    <div className="grid gap-2">
+                        <label htmlFor="serviceCatalogItemId" className="font-medium">
+                            Služba z katalogu
+                        </label>
+                        <select
+                            id="serviceCatalogItemId"
+                            name="serviceCatalogItemId"
+                            defaultValue={serviceItem.serviceCatalogItemId ?? ''}
+                            className={inputClass}
+                        >
+                            <option className={optionClass} value="">
+                                Bez vybrané katalogové služby
+                            </option>
+                            {serviceCatalogItems.map((item) => (
+                                <option className={optionClass} key={item.id} value={item.id}>
+                                    {item.name} ({formatPrice(item.defaultPrice.toString())})
+                                    {item.isActive ? '' : ' - deaktivovaná'}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="grid gap-2">
+                            <label htmlFor="customName" className="font-medium">
+                                Název služby
+                            </label>
+                            <input
+                                id="customName"
+                                name="customName"
+                                type="text"
+                                required
+                                defaultValue={serviceItem.customName}
+                                className={inputClass}
+                            />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <label htmlFor="price" className="font-medium">
+                                Cena
+                            </label>
+                            <input
+                                id="price"
+                                name="price"
+                                type="text"
+                                required
+                                defaultValue={serviceItem.price.toString()}
+                                className={inputClass}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid gap-2">
+                        <label htmlFor="description" className="font-medium">
+                            Popis do smlouvy
+                        </label>
+                        <textarea
+                            id="description"
+                            name="description"
+                            rows={4}
+                            defaultValue={serviceItem.description ?? ''}
+                            className={inputClass}
+                        />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <label htmlFor="note" className="font-medium">
+                            Interní poznámka
+                        </label>
+                        <textarea
+                            id="note"
+                            name="note"
+                            rows={4}
+                            defaultValue={serviceItem.note ?? ''}
+                            className={inputClass}
+                        />
+                    </div>
+
+                    <button type="submit" className={buttonClass}>
+                        Uložit změny
+                    </button>
+                </form>
+            </section>
+        </main>
+    )
+}

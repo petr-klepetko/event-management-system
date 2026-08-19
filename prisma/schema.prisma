@@ -24,12 +24,6 @@ enum EventStatus {
   CANCELLED
 }
 
-enum DiscountType {
-  NONE
-  ABSOLUTE
-  PERCENT
-}
-
 enum DocumentType {
   CONTRACT
 }
@@ -119,30 +113,30 @@ model Event {
 }
 
 model ServiceCatalogItem {
-  id               String    @id @default(cuid())
-  name             String
-  defaultUnitPrice Decimal   @db.Decimal(10, 2)
-  isActive         Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  defaultPrice  Decimal   @db.Decimal(10, 2)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  eventItems       EventServiceItem[]
+  eventItems    EventServiceItem[]
 }
 
 model EventServiceItem {
-  id                   String        @id @default(cuid())
+  id                   String              @id @default(cuid())
   eventId              String
   serviceCatalogItemId String?
   customName           String
-  quantity             Decimal       @db.Decimal(10, 2)
-  unitPrice            Decimal       @db.Decimal(10, 2)
-  discountType         DiscountType  @default(NONE)
-  discountValue        Decimal       @default(0) @db.Decimal(10, 2)
-  totalPrice           Decimal       @db.Decimal(10, 2)
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  description          String?
+  price                Decimal             @db.Decimal(10, 2)
+  note                 String?
+  sortOrder            Int                 @default(0)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 
-  event                Event              @relation(fields: [eventId], references: [id])
+  event                Event               @relation(fields: [eventId], references: [id])
   serviceCatalogItem   ServiceCatalogItem? @relation(fields: [serviceCatalogItemId], references: [id])
 
   @@index([eventId])

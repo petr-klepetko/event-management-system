@@ -39,8 +39,25 @@ export async function getClientById(id: string) {
           createdAt: 'desc',
         },
       },
+      events: {
+        orderBy: {
+          dateStart: 'desc',
+        },
+        select: {
+          id: true,
+          title: true,
+          eventType: true,
+          status: true,
+          dateStart: true,
+          venueName: true,
+        },
+      },
     },
   })
+}
+
+export async function getClientsCount() {
+  return prisma.client.count()
 }
 
 export async function createClient(input: CreateClientInput) {
