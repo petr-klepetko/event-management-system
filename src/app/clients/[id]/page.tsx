@@ -4,7 +4,7 @@ import { getClientById } from '@/modules/clients/client.service'
 import { mapClientTypeToLabel } from '@/modules/clients/client.utils'
 import { mapEventStatusToLabel } from '@/modules/events/event.utils'
 import { createContactAction } from './actions'
-import { buttonClass, inputClass } from '@/lib/ui/styles'
+import { buttonClass, inputClass, primaryButtonClass } from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 
 type ClientDetailPageProps = {
@@ -44,12 +44,24 @@ export default async function ClientDetailPage({
                 ]}
             />
 
-            <div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-3xl font-bold">{client.name}</h1>
+                <Link
+                    href={`/clients/${client.id}/edit`}
+                    className={primaryButtonClass}
+                >
+                    Upravit klienta
+                </Link>
             </div>
 
             <section className="mt-8 rounded-xl border p-6">
                 <h2 className="text-xl font-semibold">Detail klienta</h2>
+
+                {success === 'KlientBylUlozen' ? (
+                    <p className="mt-4 rounded-md border border-green-500/40 px-4 py-3 text-sm text-green-300">
+                        Klient byl uložen.
+                    </p>
+                ) : null}
 
                 <dl className="mt-4 grid gap-4 sm:grid-cols-2">
                     <div>

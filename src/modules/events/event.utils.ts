@@ -7,6 +7,13 @@ const eventStatusLabels: Record<EventStatus, string> = {
     CANCELLED: 'Zrušeno',
 }
 
+export const eventStatusOptions = Object.entries(eventStatusLabels).map(
+    ([value, label]) => ({
+        value: value as EventStatus,
+        label,
+    })
+)
+
 export function mapEventStatusToLabel(status: EventStatus) {
     return eventStatusLabels[status]
 }

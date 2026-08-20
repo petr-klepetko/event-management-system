@@ -60,7 +60,7 @@ export async function createEventServiceItemAction(
 
     if (errorMessage) {
         redirect(
-            `/events/${args.eventId}?error=${encodeURIComponent(errorMessage)}`
+            `/events/${args.eventId}/services/new?error=${encodeURIComponent(errorMessage)}`
         )
     }
 

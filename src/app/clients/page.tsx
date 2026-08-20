@@ -1,9 +1,8 @@
 import { getClients } from '@/modules/clients/client.service'
-import { createClientAction } from './actions'
 import { mapClientTypeToLabel } from '@/modules/clients/client.utils'
 import Link from 'next/link'
-import { buttonClass, inputClass, optionClass } from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import { primaryButtonClass } from '@/lib/ui/styles'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,7 +31,15 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       </div>
 
       <section className="mt-8 rounded-xl border p-6">
-        <h2 className="text-xl font-semibold">Seznam klientů</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Seznam klientů</h2>
+          <Link
+            href="/clients/new"
+            className={primaryButtonClass}
+          >
+            Nový klient
+          </Link>
+        </div>
 
         {error ? (
           <p className="mt-4 rounded-md border border-red-500/40 px-4 py-3 text-sm text-red-300">
@@ -83,101 +90,6 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             </table>
           </div>
         )}
-      </section>
-
-      <section className="mt-8 rounded-xl border p-6">
-        <h2 className="text-xl font-semibold">Vytvořit klienta</h2>
-
-        <form action={createClientAction} className="mt-4 grid gap-4">
-          <div className="grid gap-2">
-            <label htmlFor="name" className="font-medium">
-              Název
-            </label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              required
-              className={inputClass}
-              placeholder="Gymnázium Novákova"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <label htmlFor="type" className="font-medium">
-              Typ
-            </label>
-            <select
-              id="type"
-              name="type"
-              defaultValue="COMPANY"
-              className={inputClass}
-            >
-              <option className={optionClass} value="COMPANY">Firma</option>
-              <option className={optionClass} value="SCHOOL">Škola</option>
-              <option className={optionClass} value="PERSON">Osoba</option>
-            </select>
-          </div>
-
-          <div className="grid gap-2">
-            <label htmlFor="ico" className="font-medium">
-              IČO
-            </label>
-            <input
-              id="ico"
-              name="ico"
-              type="text"
-              className={inputClass}
-              placeholder="12345678"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <label htmlFor="dic" className="font-medium">
-              DIČ
-            </label>
-            <input
-              id="dic"
-              name="dic"
-              type="text"
-              className={inputClass}
-              placeholder="CZ12345678"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <label htmlFor="city" className="font-medium">
-              Město
-            </label>
-            <input
-              id="city"
-              name="city"
-              type="text"
-              className={inputClass}
-              placeholder="Brno"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <label htmlFor="country" className="font-medium">
-              Země
-            </label>
-            <input
-              id="country"
-              name="country"
-              type="text"
-              defaultValue="Czech Republic"
-              className={inputClass}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className={buttonClass}
-          >
-            Vytvořit klienta
-          </button>
-        </form>
       </section>
 
     </main>

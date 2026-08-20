@@ -52,7 +52,7 @@ export async function createServiceCatalogItemAction(formData: FormData) {
     }
 
     if (errorMessage) {
-        redirect(`/services?error=${encodeURIComponent(errorMessage)}`)
+        redirect(`/services/new?error=${encodeURIComponent(errorMessage)}`)
     }
 
     redirect('/services?success=SluzbaBylaVytvorena')

@@ -11,6 +11,11 @@ export type CreateEventInput = {
     internalNote?: string | null
 }
 
+export type UpdateEventInput = CreateEventInput & {
+    id: string
+    status: EventStatus
+}
+
 export async function getEvents() {
     return prisma.event.findMany({
         orderBy: {
@@ -105,6 +110,40 @@ export async function createEvent(input: CreateEventInput) {
             title: input.title,
             eventType: input.eventType,
             status: EventStatus.DRAFT,
+            dateStart: input.dateStart,
+            venueName: input.venueName ?? null,
+            clientId: input.clientId,
+            primaryContactId: input.primaryContactId ?? null,
+            internalNote: input.internalNote ?? null,
+        },
+    })
+}
+
+export async function updateEvent(input: UpdateEventInput) {
+    if (input.primaryContactId) {
+        const contact = await prisma.contactPerson.findFirst({
+            where: {
+                id: input.primaryContactId,
+                clientId: input.clientId,
+            },
+            select: {
+                id: true,
+            },
+        })
+
+        if (!contact) {
+            throw new Error('Hlavní kontakt musí patřit k vybranému klientovi.')
+        }
+    }
+
+    return prisma.event.update({
+        where: {
+            id: input.id,
+        },
+        data: {
+            title: input.title,
+            eventType: input.eventType,
+            status: input.status,
             dateStart: input.dateStart,
             venueName: input.venueName ?? null,
             clientId: input.clientId,

@@ -8,8 +8,9 @@
   --border: #d8e0ea;
   --border-strong: #bac7d6;
   --muted: #667085;
-  --primary: #1d4ed8;
-  --primary-soft: #dbeafe;
+  --primary: #0f766e;
+  --primary-hover: #115e59;
+  --primary-soft: #ccfbf1;
   --danger: #b42318;
   --danger-soft: #fee4e2;
   --success: #027a48;
@@ -66,7 +67,7 @@ main {
 }
 
 .breadcrumbs a:hover {
-  color: #1e3a8a;
+  color: var(--primary-hover);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -154,7 +155,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--primary) !important;
-  box-shadow: 0 0 0 3px rgb(29 78 216 / 0.14);
+  box-shadow: 0 0 0 3px rgb(15 118 110 / 0.16);
 }
 
 option {
@@ -172,8 +173,33 @@ button.rounded-md {
 a.rounded-md:hover,
 button.rounded-md:hover {
   background: var(--primary-soft) !important;
-  border-color: #93c5fd !important;
-  color: #1e3a8a;
+  border-color: #5eead4 !important;
+  color: var(--primary-hover);
+}
+
+.btn-primary {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.08);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+  color: #000000 !important;
+}
+
+.btn-secondary {
+  background: #ffffff !important;
+  border-color: var(--border-strong) !important;
+  color: #172033 !important;
+}
+
+.btn-secondary:hover {
+  background: var(--primary-soft) !important;
+  border-color: #5eead4 !important;
+  color: var(--primary-hover) !important;
 }
 
 button[type='submit'] {
@@ -205,4 +231,179 @@ button[type='submit'] {
 
 .text-gray-300 {
   color: #475467 !important;
+}
+
+.offer-document {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: 0 16px 42px rgb(15 23 42 / 0.08);
+  color: #172033;
+  margin: 0 auto;
+  max-width: 52rem;
+  padding: 2rem 2.25rem;
+}
+
+.offer-header {
+  align-items: flex-start;
+  border-bottom: 2px solid #172033;
+  display: flex;
+  gap: 1.5rem;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+}
+
+.offer-kicker {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+}
+
+.offer-header h2 {
+  font-size: 1.7rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.offer-meta {
+  min-width: 10rem;
+  text-align: right;
+}
+
+.offer-meta p {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.15rem;
+}
+
+.offer-summary {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.offer-section {
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+  margin-top: 1.25rem;
+  padding-bottom: 1rem;
+}
+
+.offer-section h3 {
+  font-size: 1rem;
+  margin: 0 0 0.75rem;
+}
+
+.offer-grid {
+  display: grid;
+  gap: 0.65rem 1.25rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.offer-grid dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-bottom: 0.15rem;
+}
+
+.offer-grid dd {
+  color: #172033;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.offer-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.offer-table th,
+.offer-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 0.75rem 0.75rem 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.offer-table th:last-child,
+.offer-table td:last-child {
+  padding-right: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.offer-table tfoot td {
+  border-bottom: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding-top: 1rem;
+}
+
+.offer-empty {
+  color: var(--muted);
+  margin: 0;
+}
+
+.offer-footer {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 640px) {
+  .offer-document {
+    padding: 1.5rem;
+  }
+
+  .offer-header {
+    display: block;
+  }
+
+  .offer-meta {
+    margin-top: 1rem;
+    text-align: left;
+  }
+
+  .offer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .offer-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+    size: A4;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .print-preview-page {
+    max-width: none;
+    padding: 0;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  .offer-document {
+    border: 0;
+    box-shadow: none;
+    max-width: none;
+    padding: 0;
+  }
+
+  .offer-section {
+    break-inside: avoid;
+  }
 }

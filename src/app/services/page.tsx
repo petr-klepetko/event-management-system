@@ -1,12 +1,12 @@
 import Link from 'next/link'
 import ConfirmSubmitButton from '@/components/forms/ConfirmSubmitButton'
-import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { getServiceCatalogItemsForAdmin } from '@/modules/services/service-catalog.service'
-import {
-    createServiceCatalogItemAction,
-    setServiceCatalogItemActiveAction,
-} from './actions'
+import { setServiceCatalogItemActiveAction } from './actions'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import {
+    compactSecondaryButtonClass,
+    primaryButtonClass,
+} from '@/lib/ui/styles'
 
 export const dynamic = 'force-dynamic'
 
@@ -92,7 +92,7 @@ function ServicesTable({ services, inactive = false }: ServicesTableProps) {
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Link
                                             href={`/services/${service.id}/edit`}
-                                            className="inline-flex min-h-10 items-center rounded-md border px-3 py-1 text-sm font-medium cursor-pointer hover:bg-white/10 transition-colors"
+                                            className={compactSecondaryButtonClass}
                                         >
                                             Upravit
                                         </Link>
@@ -103,7 +103,7 @@ function ServicesTable({ services, inactive = false }: ServicesTableProps) {
                                                         ? 'Opravdu chceš deaktivovat tuto službu?'
                                                         : 'Opravdu chceš znovu aktivovat tuto službu?'
                                                 }
-                                                className="inline-flex min-h-10 items-center rounded-md border px-3 py-1 text-sm font-medium cursor-pointer hover:bg-white/10 transition-colors"
+                                                className={compactSecondaryButtonClass}
                                             >
                                                 {service.isActive
                                                     ? 'Deaktivovat'
@@ -144,7 +144,15 @@ export default async function ServicesPage({
             </div>
 
             <section className="mt-8 rounded-xl border p-6">
-                <h2 className="text-xl font-semibold">Aktivní služby</h2>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-xl font-semibold">Aktivní služby</h2>
+                    <Link
+                        href="/services/new"
+                        className={primaryButtonClass}
+                    >
+                        Nová služba
+                    </Link>
+                </div>
 
                 {error ? (
                     <p className="mt-4 rounded-md border border-red-500/40 px-4 py-3 text-sm text-red-300">
@@ -167,62 +175,6 @@ export default async function ServicesPage({
                 </h2>
 
                 <ServicesTable services={inactiveServices} inactive />
-            </section>
-
-            <section className="mt-8 rounded-xl border p-6">
-                <h2 className="text-xl font-semibold">
-                    Vytvořit katalogovou službu
-                </h2>
-
-                <form
-                    action={createServiceCatalogItemAction}
-                    className="mt-4 grid gap-4"
-                >
-                    <div className="grid gap-2">
-                        <label htmlFor="name" className="font-medium">
-                            Název
-                        </label>
-                        <input
-                            id="name"
-                            name="name"
-                            type="text"
-                            required
-                            className={inputClass}
-                            placeholder="DJ služby"
-                        />
-                    </div>
-
-                    <div className="grid gap-2">
-                        <label htmlFor="defaultPrice" className="font-medium">
-                            Výchozí cena
-                        </label>
-                        <input
-                            id="defaultPrice"
-                            name="defaultPrice"
-                            type="text"
-                            required
-                            className={inputClass}
-                            placeholder="15000"
-                        />
-                    </div>
-
-                    <div className="grid gap-2">
-                        <label htmlFor="description" className="font-medium">
-                            Výchozí popis
-                        </label>
-                        <textarea
-                            id="description"
-                            name="description"
-                            rows={4}
-                            className={inputClass}
-                            placeholder="Popis služby pro smlouvu..."
-                        />
-                    </div>
-
-                    <button type="submit" className={buttonClass}>
-                        Vytvořit službu
-                    </button>
-                </form>
             </section>
         </main>
     )

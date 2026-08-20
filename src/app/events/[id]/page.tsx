@@ -1,11 +1,15 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getEventById } from '@/modules/events/event.service'
-import { getServiceCatalogItems } from '@/modules/event-services/event-service.service'
-import { createEventServiceItemAction, deleteEventServiceItemAction } from './actions'
-import AddServiceForm from './AddServiceForm'
+import { mapEventStatusToLabel } from '@/modules/events/event.utils'
+import { deleteEventServiceItemAction } from './actions'
 import ConfirmSubmitButton from '@/components/forms/ConfirmSubmitButton'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import {
+    compactSecondaryButtonClass,
+    primaryButtonClass,
+    secondaryButtonClass,
+} from '@/lib/ui/styles'
 
 type EventDetailPageProps = {
     params: Promise<{
@@ -33,18 +37,11 @@ export default async function EventDetailPage({
     const { id } = await params
     const { error, success } = await searchParams
 
-    const [event, serviceCatalogItems] = await Promise.all([
-        getEventById(id),
-        getServiceCatalogItems(),
-    ])
+    const event = await getEventById(id)
 
     if (!event) {
         notFound()
     }
-
-    const createServiceForEvent = createEventServiceItemAction.bind(null, {
-        eventId: event.id,
-    })
 
     return (
         <main className="mx-auto max-w-5xl p-8">
@@ -56,12 +53,32 @@ export default async function EventDetailPage({
                 ]}
             />
 
-            <div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-3xl font-bold">{event.title}</h1>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                        href={`/events/${event.id}/offer`}
+                        className={secondaryButtonClass}
+                    >
+                        Náhled nabídky
+                    </Link>
+                    <Link
+                        href={`/events/${event.id}/edit`}
+                        className={primaryButtonClass}
+                    >
+                        Upravit akci
+                    </Link>
+                </div>
             </div>
 
             <section className="mt-8 rounded-xl border p-6">
                 <h2 className="text-xl font-semibold">Detail akce</h2>
+
+                {success === 'AkceBylaUlozena' ? (
+                    <p className="mt-4 rounded-md border border-green-500/40 px-4 py-3 text-sm text-green-300">
+                        Akce byla uložena.
+                    </p>
+                ) : null}
 
                 <dl className="mt-4 grid gap-4 sm:grid-cols-2">
                     <div>
@@ -71,7 +88,9 @@ export default async function EventDetailPage({
 
                     <div>
                         <dt className="text-sm text-gray-500">Stav</dt>
-                        <dd className="mt-1">{event.status}</dd>
+                        <dd className="mt-1">
+                            {mapEventStatusToLabel(event.status)}
+                        </dd>
                     </div>
 
                     <div>
@@ -120,7 +139,15 @@ export default async function EventDetailPage({
             </section>
 
             <section className="mt-8 rounded-xl border p-6">
-                <h2 className="text-xl font-semibold">Služby na akci</h2>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-xl font-semibold">Služby na akci</h2>
+                    <Link
+                        href={`/events/${event.id}/services/new`}
+                        className={primaryButtonClass}
+                    >
+                        Přidat službu
+                    </Link>
+                </div>
 
                 {error ? (
                     <p className="mt-4 rounded-md border border-red-500/40 px-4 py-3 text-sm text-red-300">
@@ -175,14 +202,14 @@ export default async function EventDetailPage({
                                                 <div className="flex items-center gap-2">
                                                     <Link
                                                         href={`/events/${event.id}/services/${item.id}/edit`}
-                                                        className="inline-flex min-h-10 items-center rounded-md border px-3 py-1 text-sm font-medium cursor-pointer hover:bg-white/10 transition-colors"
+                                                        className={compactSecondaryButtonClass}
                                                     >
                                                         Upravit
                                                     </Link>
                                                     <form action={deleteServiceItem}>
                                                         <ConfirmSubmitButton
                                                             confirmMessage="Opravdu chceš smazat tuto službu?"
-                                                            className="inline-flex min-h-10 items-center rounded-md border px-3 py-1 text-sm font-medium cursor-pointer hover:bg-white/10 transition-colors"
+                                                            className={compactSecondaryButtonClass}
                                                         >
                                                             Smazat
                                                         </ConfirmSubmitButton>
@@ -196,20 +223,6 @@ export default async function EventDetailPage({
                         </table>
                     </div>
                 )}
-            </section>
-
-            <section className="mt-8 rounded-xl border p-6">
-                <h2 className="text-xl font-semibold">Přidat službu na akci</h2>
-
-                <AddServiceForm
-                    catalogItems={serviceCatalogItems.map((item) => ({
-                        id: item.id,
-                        name: item.name,
-                        defaultPrice: item.defaultPrice.toString(),
-                        defaultDescription: item.description ?? '',
-                    }))}
-                    action={createServiceForEvent}
-                />
             </section>
         </main>
     )

@@ -10,6 +10,10 @@ export type CreateClientInput = {
   country?: string | null
 }
 
+export type UpdateClientInput = CreateClientInput & {
+  id: string
+}
+
 export type CreateContactInput = {
   clientId: string
   firstName: string
@@ -62,6 +66,22 @@ export async function getClientsCount() {
 
 export async function createClient(input: CreateClientInput) {
   return prisma.client.create({
+    data: {
+      name: input.name,
+      type: input.type,
+      ico: input.ico ?? null,
+      dic: input.dic ?? null,
+      city: input.city ?? null,
+      country: input.country ?? null,
+    },
+  })
+}
+
+export async function updateClient(input: UpdateClientInput) {
+  return prisma.client.update({
+    where: {
+      id: input.id,
+    },
     data: {
       name: input.name,
       type: input.type,
