@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createEventServiceItem, deleteEventServiceItem } from '@/modules/event-services/event-service.service'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 type CreateEventServiceItemActionArgs = {
     eventId: string
@@ -20,6 +21,7 @@ export async function createEventServiceItemAction(
     let errorMessage: string | null = null
 
     try {
+        const auth = await requireAuthContext()
         const serviceCatalogItemId = String(formData.get('serviceCatalogItemId') ?? '').trim()
         const customName = String(formData.get('customName') ?? '').trim()
         const description = String(formData.get('description') ?? '').trim()
@@ -48,7 +50,7 @@ export async function createEventServiceItemAction(
             description: description || null,
             price: parsedPrice.toFixed(2),
             note: note || null,
-        })
+        }, auth)
 
         revalidatePath(`/events/${args.eventId}`)
     } catch (error) {
@@ -70,7 +72,8 @@ export async function createEventServiceItemAction(
 export async function deleteEventServiceItemAction(
     args: DeleteEventServiceItemActionArgs
 ) {
-    await deleteEventServiceItem(args.serviceItemId)
+    const auth = await requireAuthContext()
+    await deleteEventServiceItem(args.serviceItemId, auth)
 
     revalidatePath(`/events/${args.eventId}`)
     redirect(`/events/${args.eventId}`)

@@ -8,6 +8,7 @@ import {
     updateEvent,
 } from '@/modules/events/event.service'
 import { redirect } from 'next/navigation'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 function readEventFormData(formData: FormData) {
     const title = String(formData.get('title') ?? '').trim()
@@ -55,9 +56,10 @@ export async function createEventAction(formData: FormData) {
     let errorMessage: string | null = null
 
     try {
+        const auth = await requireAuthContext()
         const input = readEventFormData(formData)
 
-        await createEvent(input)
+        await createEvent(input, auth)
 
         revalidatePath('/events')
     } catch (error) {
@@ -85,6 +87,7 @@ export async function updateEventAction(
     let errorMessage: string | null = null
 
     try {
+        const auth = await requireAuthContext()
         const input = readEventFormData(formData)
         const statusRaw = String(formData.get('status') ?? '').trim()
         const allowedStatuses: EventStatus[] = [
@@ -101,7 +104,7 @@ export async function updateEventAction(
             id: args.eventId,
             status,
             ...input,
-        })
+        }, auth)
 
         revalidatePath('/events')
         revalidatePath(`/events/${args.eventId}`)
@@ -130,7 +133,8 @@ export async function deleteEventAction(args: DeleteEventActionArgs) {
     let errorMessage: string | null = null
 
     try {
-        await deleteEvent(args.eventId)
+        const auth = await requireAuthContext()
+        await deleteEvent(args.eventId, auth)
         revalidatePath('/events')
     } catch (error) {
         errorMessage =

@@ -7,6 +7,7 @@ import {
     setServiceCatalogItemActive,
     updateServiceCatalogItem,
 } from '@/modules/services/service-catalog.service'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 function readTrimmedString(formData: FormData, key: string) {
     return String(formData.get(key) ?? '').trim()
@@ -27,6 +28,7 @@ export async function createServiceCatalogItemAction(formData: FormData) {
     let errorMessage: string | null = null
 
     try {
+        const auth = await requireAuthContext()
         const name = readTrimmedString(formData, 'name')
         const description = readTrimmedString(formData, 'description')
         const defaultPrice = normalizePrice(
@@ -41,7 +43,7 @@ export async function createServiceCatalogItemAction(formData: FormData) {
             name,
             description: description || null,
             defaultPrice,
-        })
+        }, auth)
 
         revalidatePath('/services')
     } catch (error) {
@@ -69,6 +71,7 @@ export async function updateServiceCatalogItemAction(
     let errorMessage: string | null = null
 
     try {
+        const auth = await requireAuthContext()
         const name = readTrimmedString(formData, 'name')
         const description = readTrimmedString(formData, 'description')
         const defaultPrice = normalizePrice(
@@ -84,7 +87,7 @@ export async function updateServiceCatalogItemAction(
             name,
             description: description || null,
             defaultPrice,
-        })
+        }, auth)
 
         revalidatePath('/services')
         revalidatePath(`/services/${args.serviceId}/edit`)
@@ -112,7 +115,8 @@ type SetServiceCatalogItemActiveActionArgs = {
 export async function setServiceCatalogItemActiveAction(
     args: SetServiceCatalogItemActiveActionArgs
 ) {
-    await setServiceCatalogItemActive(args.serviceId, args.isActive)
+    const auth = await requireAuthContext()
+    await setServiceCatalogItemActive(args.serviceId, args.isActive, auth)
 
     revalidatePath('/services')
     redirect('/services')

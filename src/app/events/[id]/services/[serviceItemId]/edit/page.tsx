@@ -6,6 +6,7 @@ import {
 import { updateEventServiceItemAction } from './actions'
 import { buttonClass, inputClass, optionClass } from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 type EditEventServiceItemPageProps = {
     params: Promise<{
@@ -32,8 +33,9 @@ export default async function EditEventServiceItemPage({
 }: EditEventServiceItemPageProps) {
     const { id: eventId, serviceItemId } = await params
     const { error } = await searchParams
+    const auth = await requireAuthContext()
 
-    const serviceItem = await getEventServiceItemById(serviceItemId)
+    const serviceItem = await getEventServiceItemById(serviceItemId, auth)
 
     if (!serviceItem) {
         notFound()
@@ -44,7 +46,8 @@ export default async function EditEventServiceItemPage({
     }
 
     const serviceCatalogItems = await getServiceCatalogItemsForEventServiceEdit(
-        serviceItem.serviceCatalogItemId
+        serviceItem.serviceCatalogItemId,
+        serviceItem.event.tenantId
     )
 
     const updateAction = updateEventServiceItemAction.bind(null, {

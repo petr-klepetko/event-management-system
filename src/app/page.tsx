@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { getClientsCount } from '@/modules/clients/client.service'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  const clientsCount = await getClientsCount()
+  const auth = await requireAuthContext()
+  const clientsCount = await getClientsCount(auth)
 
   return (
     <main className="mx-auto max-w-5xl p-8">
@@ -21,7 +23,7 @@ export default async function HomePage() {
       <section className="mt-8 rounded-xl border p-6">
         <h2 className="text-xl font-semibold">Rychlý přístup</h2>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-4">
           <Link
             href="/clients"
             className="rounded-md border p-4 transition-colors"
@@ -49,6 +51,26 @@ export default async function HomePage() {
               Katalog šablon služeb a výchozích cen.
             </span>
           </Link>
+          <Link
+            href="/settings/users"
+            className="rounded-md border p-4 transition-colors"
+          >
+            <span className="block font-semibold">Uživatelé</span>
+            <span className="mt-2 block text-sm text-gray-600">
+              Pozvánky, role a členové tenantu.
+            </span>
+          </Link>
+          {auth.isAdmin ? (
+            <Link
+              href="/admin"
+              className="rounded-md border p-4 transition-colors"
+            >
+              <span className="block font-semibold">Admin</span>
+              <span className="mt-2 block text-sm text-gray-600">
+                Globální správa tenantů a uživatelů.
+              </span>
+            </Link>
+          ) : null}
         </div>
       </section>
 

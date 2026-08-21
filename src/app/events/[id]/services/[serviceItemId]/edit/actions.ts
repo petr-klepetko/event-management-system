@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { updateEventServiceItem } from '@/modules/event-services/event-service.service'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 type UpdateEventServiceItemActionArgs = {
     eventId: string
@@ -16,6 +17,7 @@ export async function updateEventServiceItemAction(
     let errorMessage: string | null = null
 
     try {
+        const auth = await requireAuthContext()
         const serviceCatalogItemId = String(formData.get('serviceCatalogItemId') ?? '').trim()
         const customName = String(formData.get('customName') ?? '').trim()
         const description = String(formData.get('description') ?? '').trim()
@@ -44,7 +46,7 @@ export async function updateEventServiceItemAction(
             description: description || null,
             price: parsedPrice.toFixed(2),
             note: note || null,
-        })
+        }, auth)
 
         revalidatePath(`/events/${args.eventId}`)
         revalidatePath(`/events/${args.eventId}/services/${args.serviceItemId}/edit`)

@@ -7,6 +7,7 @@ import {
     compactSecondaryButtonClass,
     primaryButtonClass,
 } from '@/lib/ui/styles'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 export const dynamic = 'force-dynamic'
 
@@ -125,7 +126,8 @@ export default async function ServicesPage({
     searchParams,
 }: ServicesPageProps) {
     const { error, success } = await searchParams
-    const services = await getServiceCatalogItemsForAdmin()
+    const auth = await requireAuthContext()
+    const services = await getServiceCatalogItemsForAdmin(auth)
     const activeServices = services.filter((service) => service.isActive)
     const inactiveServices = services.filter((service) => !service.isActive)
     const successMessage = mapSuccessMessage(success)

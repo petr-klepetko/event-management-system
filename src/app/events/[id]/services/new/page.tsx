@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
-import { getServiceCatalogItems } from '@/modules/event-services/event-service.service'
+import { getServiceCatalogItemsForEventTenant } from '@/modules/event-services/event-service.service'
 import { getEventById } from '@/modules/events/event.service'
 import { createEventServiceItemAction } from '../../actions'
 import AddServiceForm from '../../AddServiceForm'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 type NewEventServiceItemPageProps = {
     params: Promise<{
@@ -20,10 +21,11 @@ export default async function NewEventServiceItemPage({
 }: NewEventServiceItemPageProps) {
     const { id: eventId } = await params
     const { error } = await searchParams
+    const auth = await requireAuthContext()
 
     const [event, serviceCatalogItems] = await Promise.all([
-        getEventById(eventId),
-        getServiceCatalogItems(),
+        getEventById(eventId, auth),
+        getServiceCatalogItemsForEventTenant(eventId, auth),
     ])
 
     if (!event) {

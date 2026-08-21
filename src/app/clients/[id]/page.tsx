@@ -1,11 +1,18 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { Fragment } from 'react'
 import { getClientById } from '@/modules/clients/client.service'
 import { mapClientTypeToLabel } from '@/modules/clients/client.utils'
 import { mapEventStatusToLabel } from '@/modules/events/event.utils'
 import { createContactAction } from './actions'
-import { buttonClass, inputClass, primaryButtonClass } from '@/lib/ui/styles'
+import {
+    buttonClass,
+    compactSecondaryButtonClass,
+    inputClass,
+    primaryButtonClass,
+} from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 type ClientDetailPageProps = {
     params: Promise<{
@@ -23,8 +30,9 @@ export default async function ClientDetailPage({
 }: ClientDetailPageProps) {
     const { id } = await params
     const { error, success } = await searchParams
+    const auth = await requireAuthContext()
 
-    const client = await getClientById(id)
+    const client = await getClientById(id, auth)
 
     if (!client) {
         notFound()
@@ -165,6 +173,12 @@ export default async function ClientDetailPage({
                     </p>
                 ) : null}
 
+                {success === 'KontaktBylUlozen' ? (
+                    <p className="mt-4 rounded-md border border-green-500/40 px-4 py-3 text-sm text-green-300">
+                        Kontakt byl uložen.
+                    </p>
+                ) : null}
+
                 {client.contacts.length === 0 ? (
                     <p className="mt-4 text-sm text-gray-600">
                         Tento klient zatím nemá žádné kontakty.
@@ -175,23 +189,57 @@ export default async function ClientDetailPage({
                             <thead>
                                 <tr className="border-b text-left">
                                     <th className="py-2 pr-4">Jméno</th>
-                                    <th className="py-2 pr-4">Email</th>
-                                    <th className="py-2 pr-4">Telefon</th>
+                                    <th className="py-2 pr-4">Kontakt</th>
                                     <th className="py-2 pr-4">Role</th>
-                                    <th className="py-2 pr-4">Hlavní</th>
+                                    <th className="py-2 pr-4">Hlavní kontakt</th>
+                                    <th className="py-2 pr-4">Akce</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {client.contacts.map((contact) => (
-                                    <tr key={contact.id} className="border-b">
-                                        <td className="py-2 pr-4">
-                                            {contact.firstName} {contact.lastName}
-                                        </td>
-                                        <td className="py-2 pr-4">{contact.email ?? '—'}</td>
-                                        <td className="py-2 pr-4">{contact.phone ?? '—'}</td>
-                                        <td className="py-2 pr-4">{contact.roleLabel ?? '—'}</td>
-                                        <td className="py-2 pr-4">{contact.isPrimary ? 'Ano' : '—'}</td>
-                                    </tr>
+                                    <Fragment key={contact.id}>
+                                        <tr>
+                                            <td className="py-3 pr-4 font-medium">
+                                                {contact.firstName} {contact.lastName}
+                                            </td>
+                                            <td className="py-3 pr-4">
+                                                <div className="grid gap-1">
+                                                    <div>
+                                                        <span className="text-gray-500">telefon: </span>
+                                                        {contact.phone ?? '—'}
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500">email: </span>
+                                                        {contact.email ?? '—'}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 pr-4">{contact.roleLabel ?? '—'}</td>
+                                            <td className="py-3 pr-4">
+                                                {contact.isPrimary ? 'Ano' : '—'}
+                                            </td>
+                                            <td className="py-3 pr-4 whitespace-nowrap">
+                                                <Link
+                                                    href={`/clients/${client.id}/contacts/${contact.id}/edit`}
+                                                    className={compactSecondaryButtonClass}
+                                                >
+                                                    Upravit
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                        <tr className="border-b">
+                                            <td colSpan={5} className="pb-4 pr-4">
+                                                <div className="rounded-md bg-slate-50 px-4 py-3 text-sm">
+                                                    <span className="font-medium text-gray-500">
+                                                        Poznámka:{' '}
+                                                    </span>
+                                                    <span className="whitespace-pre-wrap">
+                                                        {contact.note ?? '—'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </Fragment>
                                 ))}
                             </tbody>
                         </table>
@@ -271,6 +319,19 @@ export default async function ClientDetailPage({
                             type="text"
                             className={inputClass}
                             placeholder="Hlavní organizátor"
+                        />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <label htmlFor="note" className="font-medium">
+                            Poznámka
+                        </label>
+                        <textarea
+                            id="note"
+                            name="note"
+                            rows={3}
+                            className={inputClass}
+                            placeholder="Např. učitel, hlavní zástupce za studenty..."
                         />
                     </div>
 

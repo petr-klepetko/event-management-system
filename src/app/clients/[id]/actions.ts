@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createContact } from '@/modules/clients/client.service'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 type CreateContactActionArgs = {
     clientId: string
@@ -15,11 +16,13 @@ export async function createContactAction(
     let errorMessage: string | null = null
 
     try {
+        const auth = await requireAuthContext()
         const firstName = String(formData.get('firstName') ?? '').trim()
         const lastName = String(formData.get('lastName') ?? '').trim()
         const email = String(formData.get('email') ?? '').trim()
         const phone = String(formData.get('phone') ?? '').trim()
         const roleLabel = String(formData.get('roleLabel') ?? '').trim()
+        const note = String(formData.get('note') ?? '').trim()
         const isPrimary = formData.get('isPrimary') === 'on'
 
         if (!firstName) {
@@ -37,8 +40,9 @@ export async function createContactAction(
             email: email || null,
             phone: phone || null,
             roleLabel: roleLabel || null,
+            note: note || null,
             isPrimary,
-        })
+        }, auth)
 
         revalidatePath(`/clients/${args.clientId}`)
     } catch (error) {

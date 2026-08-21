@@ -3,6 +3,7 @@ import { mapClientTypeToLabel } from '@/modules/clients/client.utils'
 import Link from 'next/link'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import { primaryButtonClass } from '@/lib/ui/styles'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +16,8 @@ type ClientsPageProps = {
 
 export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const { error, success } = await searchParams
-  const clients = await getClients()
+  const auth = await requireAuthContext()
+  const clients = await getClients(auth)
 
   return (
     <main className="mx-auto max-w-4xl p-8">

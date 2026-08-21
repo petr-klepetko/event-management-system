@@ -5,6 +5,7 @@ import PrintButton from '@/components/print/PrintButton'
 import { primaryButtonClass, secondaryButtonClass } from '@/lib/ui/styles'
 import { getEventById } from '@/modules/events/event.service'
 import { mapEventStatusToLabel } from '@/modules/events/event.utils'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 type EventOfferPageProps = {
     params: Promise<{
@@ -36,7 +37,8 @@ function formatPrice(value: string | number) {
 
 export default async function EventOfferPage({ params }: EventOfferPageProps) {
     const { id } = await params
-    const event = await getEventById(id)
+    const auth = await requireAuthContext()
+    const event = await getEventById(id, auth)
 
     if (!event) {
         notFound()

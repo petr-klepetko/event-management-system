@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { ClientType } from '@prisma/client'
 import { createClient, updateClient } from '@/modules/clients/client.service'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 function readClientFormData(formData: FormData) {
   const name = String(formData.get('name') ?? '').trim()
@@ -38,9 +39,10 @@ export async function createClientAction(formData: FormData) {
   let errorMessage: string | null = null
 
   try {
+    const auth = await requireAuthContext()
     const input = readClientFormData(formData)
 
-    await createClient(input)
+    await createClient(input, auth)
 
     revalidatePath('/clients')
   } catch (error) {
@@ -68,12 +70,13 @@ export async function updateClientAction(
   let errorMessage: string | null = null
 
   try {
+    const auth = await requireAuthContext()
     const input = readClientFormData(formData)
 
     await updateClient({
       id: args.clientId,
       ...input,
-    })
+    }, auth)
 
     revalidatePath('/clients')
     revalidatePath(`/clients/${args.clientId}`)

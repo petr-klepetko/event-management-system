@@ -10,6 +10,7 @@ import {
     primaryButtonClass,
     secondaryButtonClass,
 } from '@/lib/ui/styles'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 type EventDetailPageProps = {
     params: Promise<{
@@ -36,8 +37,9 @@ export default async function EventDetailPage({
 }: EventDetailPageProps) {
     const { id } = await params
     const { error, success } = await searchParams
+    const auth = await requireAuthContext()
 
-    const event = await getEventById(id)
+    const event = await getEventById(id, auth)
 
     if (!event) {
         notFound()
@@ -127,6 +129,16 @@ export default async function EventDetailPage({
                                 ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
                                 : '—'}
                         </dd>
+                    </div>
+
+                    <div>
+                        <dt className="text-sm text-gray-500">Email kontaktu</dt>
+                        <dd className="mt-1">{event.primaryContact?.email ?? '—'}</dd>
+                    </div>
+
+                    <div>
+                        <dt className="text-sm text-gray-500">Telefon kontaktu</dt>
+                        <dd className="mt-1">{event.primaryContact?.phone ?? '—'}</dd>
                     </div>
                 </dl>
 

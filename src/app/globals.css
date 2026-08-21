@@ -30,14 +30,23 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.top-navigation {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  width: 100%;
+}
+
 main {
   width: 100%;
 }
 
 .breadcrumbs {
-  margin-bottom: 1.25rem;
   color: var(--muted);
   font-size: 0.875rem;
+  min-width: 0;
 }
 
 .breadcrumbs ol {
@@ -80,6 +89,32 @@ main {
 .breadcrumbs span[aria-current='page'] {
   color: #344054;
   font-weight: 600;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.user-menu span {
+  color: #344054;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .top-navigation {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .user-menu {
+    justify-content: flex-start;
+  }
 }
 
 section {

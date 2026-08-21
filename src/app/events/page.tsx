@@ -8,6 +8,7 @@ import {
     compactSecondaryButtonClass,
     primaryButtonClass,
 } from '@/lib/ui/styles'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +22,8 @@ type EventsPageProps = {
 export default async function EventsPage({ searchParams }: EventsPageProps) {
     const { error, success } = await searchParams
 
-    const events = await getEvents()
+    const auth = await requireAuthContext()
+    const events = await getEvents(auth)
 
     return (
         <main className="mx-auto max-w-5xl p-8">
