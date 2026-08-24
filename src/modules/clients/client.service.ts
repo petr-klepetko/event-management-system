@@ -21,6 +21,7 @@ export type CreateContactInput = {
   lastName: string
   email?: string | null
   phone?: string | null
+  instagram?: string | null
   roleLabel?: string | null
   note?: string | null
   isPrimary?: boolean
@@ -146,6 +147,7 @@ export async function createContact(input: CreateContactInput, auth: AuthContext
       lastName: input.lastName,
       email: input.email ?? null,
       phone: input.phone ?? null,
+      instagram: input.instagram ?? null,
       roleLabel: input.roleLabel ?? null,
       note: input.note ?? null,
       isPrimary: input.isPrimary ?? false,
@@ -215,6 +217,7 @@ export async function updateContact(input: UpdateContactInput, auth: AuthContext
       lastName: input.lastName,
       email: input.email ?? null,
       phone: input.phone ?? null,
+      instagram: input.instagram ?? null,
       roleLabel: input.roleLabel ?? null,
       note: input.note ?? null,
       isPrimary: input.isPrimary ?? false,

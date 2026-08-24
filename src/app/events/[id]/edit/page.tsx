@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import ClientCombobox from '@/components/forms/ClientCombobox'
+import SearchableSelect from '@/components/forms/SearchableSelect'
 import {
     buttonClass,
     inputClass,
@@ -158,23 +160,11 @@ export default async function EditEventPage({
                             <label htmlFor="clientId" className="font-medium">
                                 Klient
                             </label>
-                            <select
-                                id="clientId"
-                                name="clientId"
+                            <ClientCombobox
+                                clients={formOptions.clients}
+                                defaultClientId={event.clientId}
                                 required
-                                defaultValue={event.clientId}
-                                className={inputClass}
-                            >
-                                {formOptions.clients.map((client) => (
-                                    <option
-                                        className={optionClass}
-                                        key={client.id}
-                                        value={client.id}
-                                    >
-                                        {client.name}
-                                    </option>
-                                ))}
-                            </select>
+                            />
                         </div>
 
                         <div className="grid gap-2">
@@ -184,26 +174,18 @@ export default async function EditEventPage({
                             >
                                 Hlavní kontakt
                             </label>
-                            <select
+                            <SearchableSelect
                                 id="primaryContactId"
                                 name="primaryContactId"
                                 defaultValue={event.primaryContactId ?? ''}
-                                className={inputClass}
-                            >
-                                <option className={optionClass} value="">
-                                    Bez vybraného kontaktu
-                                </option>
-                                {formOptions.contacts.map((contact) => (
-                                    <option
-                                        className={optionClass}
-                                        key={contact.id}
-                                        value={contact.id}
-                                    >
-                                        {contact.firstName} {contact.lastName} (
-                                        {contact.client.name})
-                                    </option>
-                                ))}
-                            </select>
+                                placeholder="Začni psát jméno kontaktu nebo klienta..."
+                                emptyOptionLabel="Bez vybraného kontaktu"
+                                options={formOptions.contacts.map((contact) => ({
+                                    value: contact.id,
+                                    label: `${contact.firstName} ${contact.lastName} (${contact.client.name})`,
+                                    searchText: `${contact.firstName} ${contact.lastName} ${contact.instagram ?? ''} ${contact.client.name}`,
+                                }))}
+                            />
                         </div>
                     </div>
 

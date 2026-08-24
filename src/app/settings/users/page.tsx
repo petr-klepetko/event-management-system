@@ -1,4 +1,5 @@
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
 import {
     compactSecondaryButtonClass,
     inputClass,
@@ -108,16 +109,41 @@ export default async function TenantUsersPage({
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Členové</h2>
 
-                <div className="mt-4 grid gap-4 md:hidden">
+                <ClientSideListFilter
+                    listId="tenant-members"
+                    placeholder="Hledat podle jména, e-mailu, tenantu nebo role..."
+                />
+
+                <p
+                    data-filter-empty="tenant-members"
+                    hidden
+                    className="mt-4 text-sm text-gray-600"
+                >
+                    Žádný člen neodpovídá filtru.
+                </p>
+
+                <div data-filter-list="tenant-members" className="mt-4 grid gap-4 md:hidden">
                     {memberships.map((membership) => {
                         const updateRole =
                             updateTenantMembershipRoleAction.bind(null, {
                                 membershipId: membership.id,
                             })
+                        const roleLabel =
+                            membership.role === 'MANAGER'
+                                ? 'Správce skupiny'
+                                : 'Pracovník'
+                        const filterText = [
+                            membership.user.fullName,
+                            membership.user.email,
+                            membership.tenant.name,
+                            roleLabel,
+                        ].join(' ')
 
                         return (
                             <article
                                 key={membership.id}
+                                data-filter-item
+                                data-filter-text={filterText}
                                 className="rounded-lg border border-slate-200 bg-white p-4"
                             >
                                 <div>
@@ -166,7 +192,7 @@ export default async function TenantUsersPage({
                     })}
                 </div>
 
-                <div className="mt-4 hidden overflow-x-auto md:block">
+                <div data-filter-list="tenant-members" className="mt-4 hidden overflow-x-auto md:block">
                     <table className="min-w-full border-collapse">
                         <thead>
                             <tr className="border-b text-left">
@@ -182,9 +208,24 @@ export default async function TenantUsersPage({
                                     updateTenantMembershipRoleAction.bind(null, {
                                         membershipId: membership.id,
                                     })
+                                const roleLabel =
+                                    membership.role === 'MANAGER'
+                                        ? 'Správce skupiny'
+                                        : 'Pracovník'
+                                const filterText = [
+                                    membership.user.fullName,
+                                    membership.user.email,
+                                    membership.tenant.name,
+                                    roleLabel,
+                                ].join(' ')
 
                                 return (
-                                    <tr key={membership.id} className="border-b">
+                                    <tr
+                                        key={membership.id}
+                                        data-filter-item
+                                        data-filter-text={filterText}
+                                        className="border-b"
+                                    >
                                         <td className="py-2 pr-4">
                                             {membership.user.fullName}
                                         </td>
@@ -242,41 +283,59 @@ export default async function TenantUsersPage({
                     </p>
                 ) : (
                     <>
-                    <div className="mt-4 grid gap-4 md:hidden">
-                        {invites.map((tenantInvite) => (
-                            <article
-                                key={tenantInvite.id}
-                                className="rounded-lg border border-slate-200 bg-white p-4"
-                            >
-                                <h3 className="break-words text-base font-semibold">
-                                    {tenantInvite.email}
-                                </h3>
-                                <dl className="mt-4 grid gap-3 text-sm">
-                                    <div>
-                                        <dt className="font-medium text-gray-500">Role</dt>
-                                        <dd className="mt-1">
-                                            {tenantInvite.role === 'MANAGER'
-                                                ? 'Správce skupiny'
-                                                : 'Pracovník'}
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt className="font-medium text-gray-500">
-                                            Platí do
-                                        </dt>
-                                        <dd className="mt-1">
-                                            {new Intl.DateTimeFormat('cs-CZ', {
-                                                dateStyle: 'medium',
-                                                timeStyle: 'short',
-                                            }).format(tenantInvite.expiresAt)}
-                                        </dd>
-                                    </div>
-                                </dl>
-                            </article>
-                        ))}
+                    <ClientSideListFilter
+                        listId="tenant-invites"
+                        placeholder="Hledat podle e-mailu nebo role..."
+                    />
+
+                    <p
+                        data-filter-empty="tenant-invites"
+                        hidden
+                        className="mt-4 text-sm text-gray-600"
+                    >
+                        Žádná pozvánka neodpovídá filtru.
+                    </p>
+
+                    <div data-filter-list="tenant-invites" className="mt-4 grid gap-4 md:hidden">
+                        {invites.map((tenantInvite) => {
+                            const roleLabel =
+                                tenantInvite.role === 'MANAGER'
+                                    ? 'Správce skupiny'
+                                    : 'Pracovník'
+
+                            return (
+                                <article
+                                    key={tenantInvite.id}
+                                    data-filter-item
+                                    data-filter-text={`${tenantInvite.email} ${roleLabel}`}
+                                    className="rounded-lg border border-slate-200 bg-white p-4"
+                                >
+                                    <h3 className="break-words text-base font-semibold">
+                                        {tenantInvite.email}
+                                    </h3>
+                                    <dl className="mt-4 grid gap-3 text-sm">
+                                        <div>
+                                            <dt className="font-medium text-gray-500">Role</dt>
+                                            <dd className="mt-1">{roleLabel}</dd>
+                                        </div>
+                                        <div>
+                                            <dt className="font-medium text-gray-500">
+                                                Platí do
+                                            </dt>
+                                            <dd className="mt-1">
+                                                {new Intl.DateTimeFormat('cs-CZ', {
+                                                    dateStyle: 'medium',
+                                                    timeStyle: 'short',
+                                                }).format(tenantInvite.expiresAt)}
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </article>
+                            )
+                        })}
                     </div>
 
-                    <div className="mt-4 hidden overflow-x-auto md:block">
+                    <div data-filter-list="tenant-invites" className="mt-4 hidden overflow-x-auto md:block">
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
@@ -286,24 +345,32 @@ export default async function TenantUsersPage({
                                 </tr>
                             </thead>
                             <tbody>
-                                {invites.map((tenantInvite) => (
-                                    <tr key={tenantInvite.id} className="border-b">
-                                        <td className="py-2 pr-4">
-                                            {tenantInvite.email}
-                                        </td>
-                                        <td className="py-2 pr-4">
-                                            {tenantInvite.role === 'MANAGER'
-                                                ? 'Správce skupiny'
-                                                : 'Pracovník'}
-                                        </td>
-                                        <td className="py-2 pr-4">
-                                            {new Intl.DateTimeFormat('cs-CZ', {
-                                                dateStyle: 'medium',
-                                                timeStyle: 'short',
-                                            }).format(tenantInvite.expiresAt)}
-                                        </td>
-                                    </tr>
-                                ))}
+                                {invites.map((tenantInvite) => {
+                                    const roleLabel =
+                                        tenantInvite.role === 'MANAGER'
+                                            ? 'Správce skupiny'
+                                            : 'Pracovník'
+
+                                    return (
+                                        <tr
+                                            key={tenantInvite.id}
+                                            data-filter-item
+                                            data-filter-text={`${tenantInvite.email} ${roleLabel}`}
+                                            className="border-b"
+                                        >
+                                            <td className="py-2 pr-4">
+                                                {tenantInvite.email}
+                                            </td>
+                                            <td className="py-2 pr-4">{roleLabel}</td>
+                                            <td className="py-2 pr-4">
+                                                {new Intl.DateTimeFormat('cs-CZ', {
+                                                    dateStyle: 'medium',
+                                                    timeStyle: 'short',
+                                                }).format(tenantInvite.expiresAt)}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>

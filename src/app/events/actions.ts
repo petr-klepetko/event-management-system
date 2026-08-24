@@ -54,9 +54,11 @@ function readEventFormData(formData: FormData) {
 
 export async function createEventAction(formData: FormData) {
     let errorMessage: string | null = null
+    let clientId = ''
 
     try {
         const auth = await requireAuthContext()
+        clientId = String(formData.get('clientId') ?? '').trim()
         const input = readEventFormData(formData)
 
         await createEvent(input, auth)
@@ -70,7 +72,15 @@ export async function createEventAction(formData: FormData) {
     }
 
     if (errorMessage) {
-        redirect(`/events/new?error=${encodeURIComponent(errorMessage)}`)
+        const params = new URLSearchParams({
+            error: errorMessage,
+        })
+
+        if (clientId) {
+            params.set('clientId', clientId)
+        }
+
+        redirect(`/events/new?${params.toString()}`)
     }
 
     redirect('/events?success=AkceBylaVytvorena')

@@ -10,8 +10,10 @@ import {
     compactSecondaryButtonClass,
     inputClass,
     primaryButtonClass,
+    secondaryButtonClass,
 } from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
 import { requireAuthContext } from '@/lib/auth/current-user'
 
 type ClientDetailPageProps = {
@@ -54,12 +56,20 @@ export default async function ClientDetailPage({
 
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-3xl font-bold">{client.name}</h1>
-                <Link
-                    href={`/clients/${client.id}/edit`}
-                    className={primaryButtonClass}
-                >
-                    Upravit klienta
-                </Link>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                        href={`/events/new?clientId=${client.id}`}
+                        className={primaryButtonClass}
+                    >
+                        Nová akce pro klienta
+                    </Link>
+                    <Link
+                        href={`/clients/${client.id}/edit`}
+                        className={secondaryButtonClass}
+                    >
+                        Upravit klienta
+                    </Link>
+                </div>
             </div>
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
@@ -118,12 +128,37 @@ export default async function ClientDetailPage({
                     </p>
                 ) : (
                     <>
-                    <div className="mt-4 grid gap-4 md:hidden">
-                        {client.events.map((event) => (
-                            <article
-                                key={event.id}
-                                className="rounded-lg border border-slate-200 bg-white p-4"
-                            >
+                    <ClientSideListFilter
+                        listId="client-events"
+                        placeholder="Hledat podle akce, stavu nebo místa..."
+                    />
+
+                    <p
+                        data-filter-empty="client-events"
+                        hidden
+                        className="mt-4 text-sm text-gray-600"
+                    >
+                        Žádná akce neodpovídá filtru.
+                    </p>
+
+                    <div data-filter-list="client-events" className="mt-4 grid gap-4 md:hidden">
+                        {client.events.map((event) => {
+                            const filterText = [
+                                event.title,
+                                event.eventType,
+                                mapEventStatusToLabel(event.status),
+                                event.venueName,
+                            ]
+                                .filter(Boolean)
+                                .join(' ')
+
+                            return (
+                                <article
+                                    key={event.id}
+                                    data-filter-item
+                                    data-filter-text={filterText}
+                                    className="rounded-lg border border-slate-200 bg-white p-4"
+                                >
                                 <h3 className="text-base font-semibold">
                                     <Link
                                         href={`/events/${event.id}`}
@@ -158,11 +193,12 @@ export default async function ClientDetailPage({
                                         <dd className="mt-1">{event.venueName ?? '—'}</dd>
                                     </div>
                                 </dl>
-                            </article>
-                        ))}
+                                </article>
+                            )
+                        })}
                     </div>
 
-                    <div className="mt-4 hidden overflow-x-auto md:block">
+                    <div data-filter-list="client-events" className="mt-4 hidden overflow-x-auto md:block">
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
@@ -174,8 +210,23 @@ export default async function ClientDetailPage({
                                 </tr>
                             </thead>
                             <tbody>
-                                {client.events.map((event) => (
-                                    <tr key={event.id} className="border-b">
+                                {client.events.map((event) => {
+                                    const filterText = [
+                                        event.title,
+                                        event.eventType,
+                                        mapEventStatusToLabel(event.status),
+                                        event.venueName,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' ')
+
+                                    return (
+                                    <tr
+                                        key={event.id}
+                                        data-filter-item
+                                        data-filter-text={filterText}
+                                        className="border-b"
+                                    >
                                         <td className="py-2 pr-4">
                                             <Link
                                                 href={`/events/${event.id}`}
@@ -196,7 +247,8 @@ export default async function ClientDetailPage({
                                         </td>
                                         <td className="py-2 pr-4">{event.venueName ?? '—'}</td>
                                     </tr>
-                                ))}
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -231,12 +283,41 @@ export default async function ClientDetailPage({
                     </p>
                 ) : (
                     <>
-                    <div className="mt-4 grid gap-4 md:hidden">
-                        {client.contacts.map((contact) => (
-                            <article
-                                key={contact.id}
-                                className="rounded-lg border border-slate-200 bg-white p-4"
-                            >
+                    <ClientSideListFilter
+                        listId="client-contacts"
+                        placeholder="Hledat podle jména, kontaktu, role nebo poznámky..."
+                    />
+
+                    <p
+                        data-filter-empty="client-contacts"
+                        hidden
+                        className="mt-4 text-sm text-gray-600"
+                    >
+                        Žádný kontakt neodpovídá filtru.
+                    </p>
+
+                    <div data-filter-list="client-contacts" className="mt-4 grid gap-4 md:hidden">
+                        {client.contacts.map((contact) => {
+                            const filterText = [
+                                contact.firstName,
+                                contact.lastName,
+                                contact.email,
+                                contact.phone,
+                                contact.instagram,
+                                contact.roleLabel,
+                                contact.note,
+                                contact.isPrimary ? 'hlavní ano' : '',
+                            ]
+                                .filter(Boolean)
+                                .join(' ')
+
+                            return (
+                                <article
+                                    key={contact.id}
+                                    data-filter-item
+                                    data-filter-text={filterText}
+                                    className="rounded-lg border border-slate-200 bg-white p-4"
+                                >
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
                                         <h3 className="text-base font-semibold">
@@ -268,6 +349,12 @@ export default async function ClientDetailPage({
                                         </dd>
                                     </div>
                                     <div>
+                                        <dt className="font-medium text-gray-500">Instagram</dt>
+                                        <dd className="mt-1 break-words">
+                                            {contact.instagram ?? '—'}
+                                        </dd>
+                                    </div>
+                                    <div>
                                         <dt className="font-medium text-gray-500">
                                             Hlavní kontakt
                                         </dt>
@@ -282,11 +369,12 @@ export default async function ClientDetailPage({
                                         </dd>
                                     </div>
                                 </dl>
-                            </article>
-                        ))}
+                                </article>
+                            )
+                        })}
                     </div>
 
-                    <div className="mt-4 hidden overflow-x-auto md:block">
+                    <div data-filter-list="client-contacts" className="mt-4 hidden overflow-x-auto md:block">
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
@@ -298,9 +386,26 @@ export default async function ClientDetailPage({
                                 </tr>
                             </thead>
                             <tbody>
-                                {client.contacts.map((contact) => (
+                                {client.contacts.map((contact) => {
+                                    const filterText = [
+                                        contact.firstName,
+                                        contact.lastName,
+                                        contact.email,
+                                        contact.phone,
+                                        contact.instagram,
+                                        contact.roleLabel,
+                                        contact.note,
+                                        contact.isPrimary ? 'hlavní ano' : '',
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' ')
+
+                                    return (
                                     <Fragment key={contact.id}>
-                                        <tr>
+                                        <tr
+                                            data-filter-item
+                                            data-filter-text={filterText}
+                                        >
                                             <td className="py-3 pr-4 font-medium">
                                                 {contact.firstName} {contact.lastName}
                                             </td>
@@ -313,6 +418,10 @@ export default async function ClientDetailPage({
                                                     <div>
                                                         <span className="text-gray-500">email: </span>
                                                         {contact.email ?? '—'}
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500">instagram: </span>
+                                                        {contact.instagram ?? '—'}
                                                     </div>
                                                 </div>
                                             </td>
@@ -329,7 +438,11 @@ export default async function ClientDetailPage({
                                                 </Link>
                                             </td>
                                         </tr>
-                                        <tr className="border-b">
+                                        <tr
+                                            data-filter-item
+                                            data-filter-text={filterText}
+                                            className="border-b"
+                                        >
                                             <td colSpan={5} className="pb-4 pr-4">
                                                 <div className="rounded-md bg-slate-50 px-4 py-3 text-sm">
                                                     <span className="font-medium text-gray-500">
@@ -342,7 +455,8 @@ export default async function ClientDetailPage({
                                             </td>
                                         </tr>
                                     </Fragment>
-                                ))}
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -410,6 +524,19 @@ export default async function ClientDetailPage({
                                 placeholder="+420 777 123 456"
                             />
                         </div>
+                    </div>
+
+                    <div className="grid gap-2">
+                        <label htmlFor="instagram" className="font-medium">
+                            Instagram
+                        </label>
+                        <input
+                            id="instagram"
+                            name="instagram"
+                            type="text"
+                            className={inputClass}
+                            placeholder="@instagram_handle"
+                        />
                     </div>
 
                     <div className="grid gap-2">

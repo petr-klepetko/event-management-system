@@ -4,7 +4,8 @@ import {
     getServiceCatalogItemsForEventServiceEdit,
 } from '@/modules/event-services/event-service.service'
 import { updateEventServiceItemAction } from './actions'
-import { buttonClass, inputClass, optionClass } from '@/lib/ui/styles'
+import SearchableSelect from '@/components/forms/SearchableSelect'
+import { buttonClass, inputClass } from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import { requireAuthContext } from '@/lib/auth/current-user'
 
@@ -93,22 +94,22 @@ export default async function EditEventServiceItemPage({
                         <label htmlFor="serviceCatalogItemId" className="font-medium">
                             Služba z katalogu
                         </label>
-                        <select
+                        <SearchableSelect
                             id="serviceCatalogItemId"
                             name="serviceCatalogItemId"
                             defaultValue={serviceItem.serviceCatalogItemId ?? ''}
-                            className={inputClass}
-                        >
-                            <option className={optionClass} value="">
-                                Bez vybrané katalogové služby
-                            </option>
-                            {serviceCatalogItems.map((item) => (
-                                <option className={optionClass} key={item.id} value={item.id}>
-                                    {item.name} ({formatPrice(item.defaultPrice.toString())})
-                                    {item.isActive ? '' : ' - deaktivovaná'}
-                                </option>
-                            ))}
-                        </select>
+                            placeholder="Začni psát název služby..."
+                            emptyOptionLabel="Bez vybrané katalogové služby"
+                            options={serviceCatalogItems.map((item) => ({
+                                value: item.id,
+                                label: `${item.name} (${formatPrice(item.defaultPrice.toString())})${
+                                    item.isActive ? '' : ' - deaktivovaná'
+                                }`,
+                                searchText: `${item.name} ${item.defaultPrice.toString()} ${
+                                    item.description ?? ''
+                                } ${item.isActive ? 'aktivní' : 'deaktivovaná'}`,
+                            }))}
+                        />
                     </div>
 
                     <div className="grid gap-2 sm:grid-cols-2">

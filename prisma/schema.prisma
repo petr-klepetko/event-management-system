@@ -162,6 +162,7 @@ model ContactPerson {
   lastName   String
   email      String?
   phone      String?
+  instagram  String?
   roleLabel  String?
   note       String?
   isPrimary  Boolean  @default(false)

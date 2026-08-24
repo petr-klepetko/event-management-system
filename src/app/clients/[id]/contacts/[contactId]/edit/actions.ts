@@ -22,6 +22,7 @@ export async function updateContactAction(
         const lastName = String(formData.get('lastName') ?? '').trim()
         const email = String(formData.get('email') ?? '').trim()
         const phone = String(formData.get('phone') ?? '').trim()
+        const instagram = String(formData.get('instagram') ?? '').trim()
         const roleLabel = String(formData.get('roleLabel') ?? '').trim()
         const note = String(formData.get('note') ?? '').trim()
         const isPrimary = formData.get('isPrimary') === 'on'
@@ -42,6 +43,7 @@ export async function updateContactAction(
                 lastName,
                 email: email || null,
                 phone: phone || null,
+                instagram: instagram || null,
                 roleLabel: roleLabel || null,
                 note: note || null,
                 isPrimary,

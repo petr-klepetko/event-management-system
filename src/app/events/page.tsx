@@ -4,6 +4,8 @@ import { mapEventStatusToLabel } from '@/modules/events/event.utils'
 import Link from 'next/link'
 import ConfirmSubmitButton from '@/components/forms/ConfirmSubmitButton'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
+import EventsMonthCalendar from '@/components/calendar/EventsMonthCalendar'
 import {
     compactSecondaryButtonClass,
     primaryButtonClass,
@@ -24,6 +26,23 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
 
     const auth = await requireAuthContext()
     const events = await getEvents(auth)
+    const calendarEvents = events.map((event) => ({
+        id: event.id,
+        title: event.title,
+        eventType: event.eventType,
+        status: event.status,
+        dateStart: event.dateStart.toISOString(),
+        venueName: event.venueName,
+        client: {
+            name: event.client.name,
+        },
+        primaryContact: event.primaryContact
+            ? {
+                  firstName: event.primaryContact.firstName,
+                  lastName: event.primaryContact.lastName,
+              }
+            : null,
+    }))
 
     return (
         <main className="mx-auto max-w-5xl p-4 sm:p-8">
@@ -37,6 +56,8 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
             <div>
                 <h1 className="text-3xl font-bold">Akce</h1>
             </div>
+
+            <EventsMonthCalendar events={calendarEvents} />
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -65,15 +86,47 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                     <p className="mt-4 text-sm text-gray-600">Zatím nejsou vytvořené žádné akce.</p>
                 ) : (
                     <>
-                    <div className="mt-4 grid gap-4 md:hidden">
+                    <ClientSideListFilter
+                        listId="events"
+                        placeholder="Hledat podle akce, klienta, stavu nebo místa..."
+                    />
+
+                    <p
+                        data-filter-empty="events"
+                        hidden
+                        className="mt-4 text-sm text-gray-600"
+                    >
+                        Žádná akce neodpovídá filtru.
+                    </p>
+
+                    <div data-filter-list="events" className="mt-4 grid gap-4 md:hidden">
                         {events.map((event) => {
                             const deleteEventFormAction = deleteEventAction.bind(null, {
                                 eventId: event.id,
                             })
+                            const primaryContactName = event.primaryContact
+                                ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
+                                : ''
+                            const filterText = [
+                                event.title,
+                                event.eventType,
+                                event.client.name,
+                                primaryContactName,
+                                mapEventStatusToLabel(event.status),
+                                event.venueName,
+                                new Intl.DateTimeFormat('cs-CZ', {
+                                    dateStyle: 'medium',
+                                    timeStyle: 'short',
+                                }).format(event.dateStart),
+                            ]
+                                .filter(Boolean)
+                                .join(' ')
 
                             return (
                                 <article
                                     key={event.id}
+                                    data-filter-item
+                                    data-filter-text={filterText}
                                     className="rounded-lg border border-slate-200 bg-white p-4"
                                 >
                                     <div className="flex items-start justify-between gap-3">
@@ -152,7 +205,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                         })}
                     </div>
 
-                    <div className="mt-4 hidden overflow-x-auto md:block">
+                    <div data-filter-list="events" className="mt-4 hidden overflow-x-auto md:block">
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
@@ -171,9 +224,31 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                     const deleteEventFormAction = deleteEventAction.bind(null, {
                                         eventId: event.id,
                                     })
+                                    const primaryContactName = event.primaryContact
+                                        ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
+                                        : ''
+                                    const filterText = [
+                                        event.title,
+                                        event.eventType,
+                                        event.client.name,
+                                        primaryContactName,
+                                        mapEventStatusToLabel(event.status),
+                                        event.venueName,
+                                        new Intl.DateTimeFormat('cs-CZ', {
+                                            dateStyle: 'medium',
+                                            timeStyle: 'short',
+                                        }).format(event.dateStart),
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' ')
 
                                     return (
-                                        <tr key={event.id} className="border-b">
+                                        <tr
+                                            key={event.id}
+                                            data-filter-item
+                                            data-filter-text={filterText}
+                                            className="border-b"
+                                        >
                                             <td className="py-2 pr-4">
                                                 <Link
                                                     href={`/events/${event.id}`}

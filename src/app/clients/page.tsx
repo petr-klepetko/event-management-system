@@ -2,6 +2,7 @@ import { getClients } from '@/modules/clients/client.service'
 import { mapClientTypeToLabel } from '@/modules/clients/client.utils'
 import Link from 'next/link'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
 import { primaryButtonClass } from '@/lib/ui/styles'
 import { requireAuthContext } from '@/lib/auth/current-user'
 
@@ -59,10 +60,33 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
           <p className="mt-4 text-sm text-gray-600">Zatím nejsou vytvoření žádní klienti.</p>
         ) : (
           <>
-          <div className="mt-4 grid gap-4 md:hidden">
+          <ClientSideListFilter
+            listId="clients"
+            placeholder="Hledat podle názvu, IČO nebo města..."
+          />
+
+          <p
+            data-filter-empty="clients"
+            hidden
+            className="mt-4 text-sm text-gray-600"
+          >
+            Žádný klient neodpovídá filtru.
+          </p>
+
+          <div data-filter-list="clients" className="mt-4 grid gap-4 md:hidden">
             {clients.map((client) => (
               <article
                 key={client.id}
+                data-filter-item
+                data-filter-text={[
+                  client.name,
+                  mapClientTypeToLabel(client.type),
+                  client.ico,
+                  client.city,
+                  client.country,
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
                 className="rounded-lg border border-slate-200 bg-white p-4"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -105,7 +129,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             ))}
           </div>
 
-          <div className="mt-4 hidden overflow-x-auto md:block">
+          <div data-filter-list="clients" className="mt-4 hidden overflow-x-auto md:block">
             <table className="min-w-full border-collapse">
               <thead>
                 <tr className="border-b text-left">
@@ -118,7 +142,20 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
               </thead>
               <tbody>
                 {clients.map((client) => (
-                  <tr key={client.id} className="border-b">
+                  <tr
+                    key={client.id}
+                    data-filter-item
+                    data-filter-text={[
+                      client.name,
+                      mapClientTypeToLabel(client.type),
+                      client.ico,
+                      client.city,
+                      client.country,
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    className="border-b"
+                  >
                     <td className="py-2 pr-4">
                       <Link
                         href={`/clients/${client.id}`}

@@ -5,6 +5,7 @@ import { mapEventStatusToLabel } from '@/modules/events/event.utils'
 import { deleteEventServiceItemAction } from './actions'
 import ConfirmSubmitButton from '@/components/forms/ConfirmSubmitButton'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
 import {
     compactSecondaryButtonClass,
     primaryButtonClass,
@@ -140,6 +141,13 @@ export default async function EventDetailPage({
                         <dt className="text-sm text-gray-500">Telefon kontaktu</dt>
                         <dd className="mt-1">{event.primaryContact?.phone ?? '—'}</dd>
                     </div>
+
+                    <div>
+                        <dt className="text-sm text-gray-500">Instagram kontaktu</dt>
+                        <dd className="mt-1">
+                            {event.primaryContact?.instagram ?? '—'}
+                        </dd>
+                    </div>
                 </dl>
 
                 {event.internalNote ? (
@@ -177,16 +185,41 @@ export default async function EventDetailPage({
                     <p className="mt-4 text-sm text-gray-600">Zatím nejsou přidané žádné služby.</p>
                 ) : (
                     <>
-                    <div className="mt-4 grid gap-4 md:hidden">
+                    <ClientSideListFilter
+                        listId="event-services"
+                        placeholder="Hledat podle služby, ceny, popisu nebo poznámky..."
+                    />
+
+                    <p
+                        data-filter-empty="event-services"
+                        hidden
+                        className="mt-4 text-sm text-gray-600"
+                    >
+                        Žádná služba neodpovídá filtru.
+                    </p>
+
+                    <div data-filter-list="event-services" className="mt-4 grid gap-4 md:hidden">
                         {event.serviceItems.map((item) => {
                             const deleteServiceItem = deleteEventServiceItemAction.bind(null, {
                                 eventId: event.id,
                                 serviceItemId: item.id,
                             })
+                            const filterText = [
+                                item.customName,
+                                item.serviceCatalogItem?.name,
+                                item.price.toString(),
+                                formatPrice(item.price.toString()),
+                                item.description,
+                                item.note,
+                            ]
+                                .filter(Boolean)
+                                .join(' ')
 
                             return (
                                 <article
                                     key={item.id}
+                                    data-filter-item
+                                    data-filter-text={filterText}
                                     className="rounded-lg border border-slate-200 bg-white p-4"
                                 >
                                     <div className="flex items-start justify-between gap-3">
@@ -246,7 +279,7 @@ export default async function EventDetailPage({
                         })}
                     </div>
 
-                    <div className="mt-4 hidden overflow-x-auto md:block">
+                    <div data-filter-list="event-services" className="mt-4 hidden overflow-x-auto md:block">
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
@@ -264,9 +297,24 @@ export default async function EventDetailPage({
                                         eventId: event.id,
                                         serviceItemId: item.id,
                                     })
+                                    const filterText = [
+                                        item.customName,
+                                        item.serviceCatalogItem?.name,
+                                        item.price.toString(),
+                                        formatPrice(item.price.toString()),
+                                        item.description,
+                                        item.note,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' ')
 
                                     return (
-                                        <tr key={item.id} className="border-b">
+                                        <tr
+                                            key={item.id}
+                                            data-filter-item
+                                            data-filter-text={filterText}
+                                            className="border-b"
+                                        >
                                             <td className="py-2 pr-4">{item.customName}</td>
                                             <td className="py-2 pr-4">
                                                 {item.serviceCatalogItem?.name ?? '—'}

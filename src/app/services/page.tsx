@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import ConfirmSubmitButton from '@/components/forms/ConfirmSubmitButton'
+import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
 import { getServiceCatalogItemsForAdmin } from '@/modules/services/service-catalog.service'
 import { setServiceCatalogItemActiveAction } from './actions'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
@@ -41,9 +42,10 @@ function mapSuccessMessage(code?: string) {
 type ServicesTableProps = {
     services: Awaited<ReturnType<typeof getServiceCatalogItemsForAdmin>>
     inactive?: boolean
+    listId: string
 }
 
-function ServicesTable({ services, inactive = false }: ServicesTableProps) {
+function ServicesTable({ services, inactive = false, listId }: ServicesTableProps) {
     if (services.length === 0) {
         return (
             <p className="mt-4 text-sm text-gray-600">
@@ -56,17 +58,41 @@ function ServicesTable({ services, inactive = false }: ServicesTableProps) {
 
     return (
         <>
-        <div className="mt-4 grid gap-4 md:hidden">
+        <ClientSideListFilter
+            listId={listId}
+            placeholder="Hledat podle názvu, ceny nebo popisu..."
+        />
+
+        <p
+            data-filter-empty={listId}
+            hidden
+            className="mt-4 text-sm text-gray-600"
+        >
+            Žádná služba neodpovídá filtru.
+        </p>
+
+        <div data-filter-list={listId} className="mt-4 grid gap-4 md:hidden">
             {services.map((service) => {
                 const toggleService =
                     setServiceCatalogItemActiveAction.bind(null, {
                         serviceId: service.id,
                         isActive: !service.isActive,
                     })
+                const filterText = [
+                    service.name,
+                    service.defaultPrice.toString(),
+                    formatPrice(service.defaultPrice.toString()),
+                    service.description,
+                    service.isActive ? 'aktivní' : 'deaktivovaná',
+                ]
+                    .filter(Boolean)
+                    .join(' ')
 
                 return (
                     <article
                         key={service.id}
+                        data-filter-item
+                        data-filter-text={filterText}
                         className={`rounded-lg border border-slate-200 bg-white p-4 ${
                             inactive ? 'opacity-75' : ''
                         }`}
@@ -116,7 +142,7 @@ function ServicesTable({ services, inactive = false }: ServicesTableProps) {
             })}
         </div>
 
-        <div className="mt-4 hidden overflow-x-auto md:block">
+        <div data-filter-list={listId} className="mt-4 hidden overflow-x-auto md:block">
             <table className="min-w-full border-collapse">
                 <thead>
                     <tr className="border-b text-left">
@@ -133,10 +159,21 @@ function ServicesTable({ services, inactive = false }: ServicesTableProps) {
                                 serviceId: service.id,
                                 isActive: !service.isActive,
                             })
+                        const filterText = [
+                            service.name,
+                            service.defaultPrice.toString(),
+                            formatPrice(service.defaultPrice.toString()),
+                            service.description,
+                            service.isActive ? 'aktivní' : 'deaktivovaná',
+                        ]
+                            .filter(Boolean)
+                            .join(' ')
 
                         return (
                             <tr
                                 key={service.id}
+                                data-filter-item
+                                data-filter-text={filterText}
                                 className={`border-b ${
                                     inactive ? 'text-gray-400' : ''
                                 }`}
@@ -230,7 +267,7 @@ export default async function ServicesPage({
                     </p>
                 ) : null}
 
-                <ServicesTable services={activeServices} />
+                <ServicesTable services={activeServices} listId="active-services" />
             </section>
 
             <section className="mt-8 rounded-xl border border-gray-700 p-4 sm:p-6">
@@ -238,7 +275,11 @@ export default async function ServicesPage({
                     Deaktivované služby
                 </h2>
 
-                <ServicesTable services={inactiveServices} inactive />
+                <ServicesTable
+                    services={inactiveServices}
+                    inactive
+                    listId="inactive-services"
+                />
             </section>
         </main>
     )

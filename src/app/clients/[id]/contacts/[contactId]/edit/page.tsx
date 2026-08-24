@@ -123,6 +123,20 @@ export default async function EditContactPage({
                     </div>
 
                     <div className="grid gap-2">
+                        <label htmlFor="instagram" className="font-medium">
+                            Instagram
+                        </label>
+                        <input
+                            id="instagram"
+                            name="instagram"
+                            type="text"
+                            defaultValue={contact.instagram ?? ''}
+                            className={inputClass}
+                            placeholder="@instagram_handle"
+                        />
+                    </div>
+
+                    <div className="grid gap-2">
                         <label htmlFor="roleLabel" className="font-medium">
                             Role
                         </label>

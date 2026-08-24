@@ -87,6 +87,7 @@ export async function getEventFormOptions(auth: AuthContext) {
                 id: true,
                 firstName: true,
                 lastName: true,
+                instagram: true,
                 clientId: true,
                 client: {
                     select: {

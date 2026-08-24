@@ -10,6 +10,7 @@ import {
     resetUserPassword,
     setUserActive,
 } from '@/modules/admin/admin.service'
+import { assertPasswordPolicy } from '@/lib/auth/password-policy'
 
 function normalizeSlug(value: string) {
     return value
@@ -71,9 +72,7 @@ export async function createAdminUserAction(formData: FormData) {
             throw new Error('Login, jméno a heslo jsou povinné.')
         }
 
-        if (password.length < 4) {
-            throw new Error('Heslo musí mít alespoň 4 znaky.')
-        }
+        assertPasswordPolicy(password)
 
         await createAdminManagedUser(
             {
@@ -127,9 +126,7 @@ export async function resetUserPasswordAction(
         const auth = await requireAdminContext()
         const password = String(formData.get('password') ?? '')
 
-        if (password.length < 4) {
-            throw new Error('Heslo musí mít alespoň 4 znaky.')
-        }
+        assertPasswordPolicy(password)
 
         await resetUserPassword(
             {

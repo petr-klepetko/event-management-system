@@ -1,4 +1,5 @@
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
 import ConfirmSubmitButton from '@/components/forms/ConfirmSubmitButton'
 import {
     compactSecondaryButtonClass,
@@ -145,6 +146,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 name="password"
                                 type="text"
                                 required
+                                minLength={8}
                                 className={inputClass}
                             />
                         </div>
@@ -222,7 +224,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Uživatelé</h2>
 
-                <div className="mt-4 grid gap-4 md:hidden">
+                <ClientSideListFilter
+                    listId="admin-users"
+                    placeholder="Hledat podle jména, loginu, role nebo stavu..."
+                />
+
+                <p
+                    data-filter-empty="admin-users"
+                    hidden
+                    className="mt-4 text-sm text-gray-600"
+                >
+                    Žádný uživatel neodpovídá filtru.
+                </p>
+
+                <div data-filter-list="admin-users" className="mt-4 grid gap-4 md:hidden">
                     {overview.users.map((user) => {
                         const toggleActive = setUserActiveAction.bind(null, {
                             userId: user.id,
@@ -231,10 +246,18 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         const resetPassword = resetUserPasswordAction.bind(null, {
                             userId: user.id,
                         })
+                        const filterText = [
+                            user.fullName,
+                            user.email,
+                            user.role,
+                            user.isActive ? 'aktivní' : 'vypnutý',
+                        ].join(' ')
 
                         return (
                             <article
                                 key={user.id}
+                                data-filter-item
+                                data-filter-text={filterText}
                                 className="rounded-lg border border-slate-200 bg-white p-4"
                             >
                                 <div>
@@ -272,7 +295,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                             name="password"
                                             type="text"
                                             required
-                                            minLength={4}
+                                            minLength={8}
                                             className={inputClass}
                                             placeholder="Nové heslo"
                                         />
@@ -302,7 +325,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     })}
                 </div>
 
-                <div className="mt-4 hidden overflow-x-auto md:block">
+                <div data-filter-list="admin-users" className="mt-4 hidden overflow-x-auto md:block">
                     <table className="min-w-full border-collapse">
                         <thead>
                             <tr className="border-b text-left">
@@ -324,9 +347,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                     resetUserPasswordAction.bind(null, {
                                         userId: user.id,
                                     })
+                                const filterText = [
+                                    user.fullName,
+                                    user.email,
+                                    user.role,
+                                    user.isActive ? 'aktivní' : 'vypnutý',
+                                ].join(' ')
 
                                 return (
-                                    <tr key={user.id} className="border-b">
+                                    <tr
+                                        key={user.id}
+                                        data-filter-item
+                                        data-filter-text={filterText}
+                                        className="border-b"
+                                    >
                                         <td className="py-2 pr-4">
                                             {user.fullName}
                                         </td>
@@ -348,7 +382,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                                     name="password"
                                                     type="text"
                                                     required
-                                                    minLength={4}
+                                                    minLength={8}
                                                     className={inputClass}
                                                     placeholder="Nové heslo"
                                                 />
@@ -387,10 +421,25 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Tenanty</h2>
 
-                <div className="mt-4 grid gap-4 md:hidden">
+                <ClientSideListFilter
+                    listId="admin-tenants"
+                    placeholder="Hledat podle názvu nebo slugu..."
+                />
+
+                <p
+                    data-filter-empty="admin-tenants"
+                    hidden
+                    className="mt-4 text-sm text-gray-600"
+                >
+                    Žádný tenant neodpovídá filtru.
+                </p>
+
+                <div data-filter-list="admin-tenants" className="mt-4 grid gap-4 md:hidden">
                     {overview.tenants.map((tenant) => (
                         <article
                             key={tenant.id}
+                            data-filter-item
+                            data-filter-text={`${tenant.name} ${tenant.slug}`}
                             className="rounded-lg border border-slate-200 bg-white p-4"
                         >
                             <h3 className="text-base font-semibold">{tenant.name}</h3>
@@ -415,7 +464,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     ))}
                 </div>
 
-                <div className="mt-4 hidden overflow-x-auto md:block">
+                <div data-filter-list="admin-tenants" className="mt-4 hidden overflow-x-auto md:block">
                     <table className="min-w-full border-collapse">
                         <thead>
                             <tr className="border-b text-left">
@@ -426,7 +475,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         </thead>
                         <tbody>
                             {overview.tenants.map((tenant) => (
-                                <tr key={tenant.id} className="border-b">
+                                <tr
+                                    key={tenant.id}
+                                    data-filter-item
+                                    data-filter-text={`${tenant.name} ${tenant.slug}`}
+                                    className="border-b"
+                                >
                                     <td className="py-2 pr-4">{tenant.name}</td>
                                     <td className="py-2 pr-4">{tenant.slug}</td>
                                     <td className="py-2 pr-4">

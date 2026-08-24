@@ -1,11 +1,14 @@
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
-import { buttonClass, inputClass, optionClass } from '@/lib/ui/styles'
+import ClientCombobox from '@/components/forms/ClientCombobox'
+import SearchableSelect from '@/components/forms/SearchableSelect'
+import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { getEventFormOptions } from '@/modules/events/event.service'
 import { createEventAction } from '../actions'
 import { requireAuthContext } from '@/lib/auth/current-user'
 
 type NewEventPageProps = {
     searchParams: Promise<{
+        clientId?: string
         error?: string
     }>
 }
@@ -13,7 +16,7 @@ type NewEventPageProps = {
 export default async function NewEventPage({
     searchParams,
 }: NewEventPageProps) {
-    const { error } = await searchParams
+    const { clientId, error } = await searchParams
     const auth = await requireAuthContext()
     const formOptions = await getEventFormOptions(auth)
 
@@ -102,26 +105,11 @@ export default async function NewEventPage({
                             <label htmlFor="clientId" className="font-medium">
                                 Klient
                             </label>
-                            <select
-                                id="clientId"
-                                name="clientId"
+                            <ClientCombobox
+                                clients={formOptions.clients}
+                                defaultClientId={clientId}
                                 required
-                                defaultValue=""
-                                className={inputClass}
-                            >
-                                <option className={optionClass} value="" disabled>
-                                    Vyber klienta
-                                </option>
-                                {formOptions.clients.map((client) => (
-                                    <option
-                                        className={optionClass}
-                                        key={client.id}
-                                        value={client.id}
-                                    >
-                                        {client.name}
-                                    </option>
-                                ))}
-                            </select>
+                            />
                         </div>
 
                         <div className="grid gap-2">
@@ -131,26 +119,17 @@ export default async function NewEventPage({
                             >
                                 Hlavní kontakt
                             </label>
-                            <select
+                            <SearchableSelect
                                 id="primaryContactId"
                                 name="primaryContactId"
-                                defaultValue=""
-                                className={inputClass}
-                            >
-                                <option className={optionClass} value="">
-                                    Bez vybraného kontaktu
-                                </option>
-                                {formOptions.contacts.map((contact) => (
-                                    <option
-                                        className={optionClass}
-                                        key={contact.id}
-                                        value={contact.id}
-                                    >
-                                        {contact.firstName} {contact.lastName} (
-                                        {contact.client.name})
-                                    </option>
-                                ))}
-                            </select>
+                                placeholder="Začni psát jméno kontaktu nebo klienta..."
+                                emptyOptionLabel="Bez vybraného kontaktu"
+                                options={formOptions.contacts.map((contact) => ({
+                                    value: contact.id,
+                                    label: `${contact.firstName} ${contact.lastName} (${contact.client.name})`,
+                                    searchText: `${contact.firstName} ${contact.lastName} ${contact.instagram ?? ''} ${contact.client.name}`,
+                                }))}
+                            />
                         </div>
                     </div>
 

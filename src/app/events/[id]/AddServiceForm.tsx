@@ -1,6 +1,7 @@
 'use client'
 
-import { buttonClass, inputClass, optionClass } from '@/lib/ui/styles'
+import SearchableSelect from '@/components/forms/SearchableSelect'
+import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { useState } from 'react'
 
 type CatalogItem = {
@@ -20,9 +21,7 @@ export default function AddServiceForm({ catalogItems, action }: Props) {
     const [price, setPrice] = useState('')
     const [description, setDescription] = useState('')
 
-    function handleCatalogChange(e: React.ChangeEvent<HTMLSelectElement>) {
-        const selectedId = e.target.value
-
+    function handleCatalogChange(selectedId: string) {
         const item = catalogItems.find((i) => i.id === selectedId)
 
         if (!item) {
@@ -40,20 +39,21 @@ export default function AddServiceForm({ catalogItems, action }: Props) {
     return (
         <form action={action} className="mt-4 grid gap-4">
             <div className="grid gap-2">
-                <label className="font-medium">Služba z katalogu</label>
-                <select
+                <label htmlFor="serviceCatalogItemId" className="font-medium">
+                    Služba z katalogu
+                </label>
+                <SearchableSelect
+                    id="serviceCatalogItemId"
                     name="serviceCatalogItemId"
-                    defaultValue=""
-                    onChange={handleCatalogChange}
-                    className={inputClass}
-                >
-                    <option className={optionClass} value="">Bez vybrané katalogové služby</option>
-                    {catalogItems.map((item) => (
-                        <option className={optionClass} key={item.id} value={item.id}>
-                            {item.name} ({item.defaultPrice} Kč)
-                        </option>
-                    ))}
-                </select>
+                    placeholder="Začni psát název služby..."
+                    emptyOptionLabel="Bez vybrané katalogové služby"
+                    options={catalogItems.map((item) => ({
+                        value: item.id,
+                        label: `${item.name} (${item.defaultPrice} Kč)`,
+                        searchText: `${item.name} ${item.defaultPrice} ${item.defaultDescription}`,
+                    }))}
+                    onValueChange={handleCatalogChange}
+                />
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2">

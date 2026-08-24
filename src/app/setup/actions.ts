@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createSession } from '@/modules/auth/auth.service'
 import { createInitialAdmin } from '@/modules/auth/setup.service'
 import { sessionCookieName } from '@/lib/auth/constants'
+import { assertPasswordPolicy } from '@/lib/auth/password-policy'
 
 export async function initialSetupAction(formData: FormData) {
     let errorMessage: string | null = null
@@ -19,9 +20,7 @@ export async function initialSetupAction(formData: FormData) {
             throw new Error('Vyplň všechny povinné údaje.')
         }
 
-        if (password.length < 8) {
-            throw new Error('Heslo musí mít alespoň 8 znaků.')
-        }
+        assertPasswordPolicy(password)
 
         const user = await createInitialAdmin({
             tenantName,
