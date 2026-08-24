@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db/prisma'
+import { AuthContext, getTenantScopedWhere } from '@/lib/auth/current-user'
 
 export type CreateEventServiceItemInput = {
   eventId: string
@@ -18,9 +19,39 @@ export type UpdateEventServiceItemInput = {
   note?: string | null
 }
 
-export async function getServiceCatalogItems() {
+export async function getServiceCatalogItems(auth: AuthContext) {
   return prisma.serviceCatalogItem.findMany({
     where: {
+      isActive: true,
+      ...getTenantScopedWhere(auth),
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  })
+}
+
+export async function getServiceCatalogItemsForEventTenant(
+  eventId: string,
+  auth: AuthContext
+) {
+  const event = await prisma.event.findUnique({
+    where: {
+      id: eventId,
+      ...getTenantScopedWhere(auth),
+    },
+    select: {
+      tenantId: true,
+    },
+  })
+
+  if (!event) {
+    return []
+  }
+
+  return prisma.serviceCatalogItem.findMany({
+    where: {
+      tenantId: event.tenantId,
       isActive: true,
     },
     orderBy: {
@@ -30,10 +61,12 @@ export async function getServiceCatalogItems() {
 }
 
 export async function getServiceCatalogItemsForEventServiceEdit(
-  currentServiceCatalogItemId?: string | null
+  currentServiceCatalogItemId: string | null | undefined,
+  eventTenantId: string
 ) {
   return prisma.serviceCatalogItem.findMany({
     where: {
+      tenantId: eventTenantId,
       OR: [
         {
           isActive: true,
@@ -58,15 +91,17 @@ export async function getServiceCatalogItemsForEventServiceEdit(
   })
 }
 
-export async function getEventServiceItemById(id: string) {
+export async function getEventServiceItemById(id: string, auth: AuthContext) {
   return prisma.eventServiceItem.findUnique({
     where: {
       id,
+      ...getTenantScopedWhere(auth),
     },
     include: {
       event: {
         select: {
           id: true,
+          tenantId: true,
           title: true,
         },
       },
@@ -76,16 +111,52 @@ export async function getEventServiceItemById(id: string) {
 }
 
 export async function createEventServiceItem(
-  input: CreateEventServiceItemInput
+  input: CreateEventServiceItemInput,
+  auth: AuthContext
 ) {
+  const event = await prisma.event.findUnique({
+    where: {
+      id: input.eventId,
+      ...getTenantScopedWhere(auth),
+    },
+    select: {
+      id: true,
+      tenantId: true,
+      ownerUserId: true,
+    },
+  })
+
+  if (!event) {
+    throw new Error('Akce neexistuje nebo k ní nemáš přístup.')
+  }
+
+  if (input.serviceCatalogItemId) {
+    const catalogItem = await prisma.serviceCatalogItem.findFirst({
+      where: {
+        id: input.serviceCatalogItemId,
+        tenantId: event.tenantId,
+      },
+      select: {
+        id: true,
+      },
+    })
+
+    if (!catalogItem) {
+      throw new Error('Vybraná katalogová služba nepatří k tenantu akce.')
+    }
+  }
+
   const existingCount = await prisma.eventServiceItem.count({
     where: {
       eventId: input.eventId,
+      tenantId: event.tenantId,
     },
   })
 
   return prisma.eventServiceItem.create({
     data: {
+      tenantId: event.tenantId,
+      ownerUserId: event.ownerUserId ?? auth.userId,
       eventId: input.eventId,
       serviceCatalogItemId: input.serviceCatalogItemId ?? null,
       customName: input.customName,
@@ -98,11 +169,43 @@ export async function createEventServiceItem(
 }
 
 export async function updateEventServiceItem(
-  input: UpdateEventServiceItemInput
+  input: UpdateEventServiceItemInput,
+  auth: AuthContext
 ) {
+  const serviceItem = await prisma.eventServiceItem.findUnique({
+    where: {
+      id: input.id,
+      ...getTenantScopedWhere(auth),
+    },
+    select: {
+      tenantId: true,
+    },
+  })
+
+  if (!serviceItem) {
+    throw new Error('Služba na akci neexistuje nebo k ní nemáš přístup.')
+  }
+
+  if (input.serviceCatalogItemId) {
+    const catalogItem = await prisma.serviceCatalogItem.findFirst({
+      where: {
+        id: input.serviceCatalogItemId,
+        tenantId: serviceItem.tenantId,
+      },
+      select: {
+        id: true,
+      },
+    })
+
+    if (!catalogItem) {
+      throw new Error('Vybraná katalogová služba nepatří k tenantu akce.')
+    }
+  }
+
   return prisma.eventServiceItem.update({
     where: {
       id: input.id,
+      ...getTenantScopedWhere(auth),
     },
     data: {
       serviceCatalogItemId: input.serviceCatalogItemId ?? null,
@@ -114,10 +217,14 @@ export async function updateEventServiceItem(
   })
 }
 
-export async function deleteEventServiceItem(serviceItemId: string) {
+export async function deleteEventServiceItem(
+  serviceItemId: string,
+  auth: AuthContext
+) {
   return prisma.eventServiceItem.delete({
     where: {
       id: serviceItemId,
+      ...getTenantScopedWhere(auth),
     },
   })
 }

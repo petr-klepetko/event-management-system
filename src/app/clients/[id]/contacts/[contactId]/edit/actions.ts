@@ -1,0 +1,68 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+import { updateContact } from '@/modules/clients/client.service'
+import { requireAuthContext } from '@/lib/auth/current-user'
+
+type UpdateContactActionArgs = {
+    clientId: string
+    contactId: string
+}
+
+export async function updateContactAction(
+    args: UpdateContactActionArgs,
+    formData: FormData
+) {
+    let errorMessage: string | null = null
+
+    try {
+        const auth = await requireAuthContext()
+        const firstName = String(formData.get('firstName') ?? '').trim()
+        const lastName = String(formData.get('lastName') ?? '').trim()
+        const email = String(formData.get('email') ?? '').trim()
+        const phone = String(formData.get('phone') ?? '').trim()
+        const roleLabel = String(formData.get('roleLabel') ?? '').trim()
+        const note = String(formData.get('note') ?? '').trim()
+        const isPrimary = formData.get('isPrimary') === 'on'
+
+        if (!firstName) {
+            throw new Error('Jméno je povinné.')
+        }
+
+        if (!lastName) {
+            throw new Error('Příjmení je povinné.')
+        }
+
+        await updateContact(
+            {
+                id: args.contactId,
+                clientId: args.clientId,
+                firstName,
+                lastName,
+                email: email || null,
+                phone: phone || null,
+                roleLabel: roleLabel || null,
+                note: note || null,
+                isPrimary,
+            },
+            auth
+        )
+
+        revalidatePath(`/clients/${args.clientId}`)
+        revalidatePath(`/clients/${args.clientId}/contacts/${args.contactId}/edit`)
+    } catch (error) {
+        errorMessage =
+            error instanceof Error
+                ? error.message
+                : 'Kontakt se nepodařilo upravit.'
+    }
+
+    if (errorMessage) {
+        redirect(
+            `/clients/${args.clientId}/contacts/${args.contactId}/edit?error=${encodeURIComponent(errorMessage)}`
+        )
+    }
+
+    redirect(`/clients/${args.clientId}?success=KontaktBylUlozen`)
+}

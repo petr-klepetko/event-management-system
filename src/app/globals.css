@@ -30,14 +30,23 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.top-navigation {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  width: 100%;
+}
+
 main {
   width: 100%;
 }
 
 .breadcrumbs {
-  margin-bottom: 1.25rem;
   color: var(--muted);
   font-size: 0.875rem;
+  min-width: 0;
 }
 
 .breadcrumbs ol {
@@ -80,6 +89,32 @@ main {
 .breadcrumbs span[aria-current='page'] {
   color: #344054;
   font-weight: 600;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.user-menu span {
+  color: #344054;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .top-navigation {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .user-menu {
+    justify-content: flex-start;
+  }
 }
 
 section {
@@ -374,6 +409,72 @@ button[type='submit'] {
 
   .offer-summary {
     grid-template-columns: 1fr;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .offer-table,
+  .offer-table thead,
+  .offer-table tbody,
+  .offer-table tfoot,
+  .offer-table tr,
+  .offer-table th,
+  .offer-table td {
+    display: block;
+  }
+
+  .offer-table thead {
+    display: none;
+  }
+
+  .offer-table tbody tr,
+  .offer-table tfoot tr {
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .offer-table th,
+  .offer-table td,
+  .offer-table th:last-child,
+  .offer-table td:last-child {
+    border-bottom: 0;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 0.35rem 0;
+    text-align: right;
+    white-space: normal;
+  }
+
+  .offer-table tbody td::before,
+  .offer-table tfoot td::before {
+    color: var(--muted);
+    content: '';
+    flex-shrink: 0;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .offer-table tbody td:nth-child(1)::before {
+    content: 'Služba';
+  }
+
+  .offer-table tbody td:nth-child(2)::before {
+    content: 'Popis';
+  }
+
+  .offer-table tbody td:nth-child(3)::before {
+    content: 'Cena';
+  }
+
+  .offer-table tfoot td:first-child {
+    display: none;
+  }
+
+  .offer-table tfoot td:last-child::before {
+    content: 'Celkem';
   }
 }
 

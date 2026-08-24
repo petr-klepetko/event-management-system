@@ -2,6 +2,7 @@ import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import { buttonClass, inputClass, optionClass } from '@/lib/ui/styles'
 import { getEventFormOptions } from '@/modules/events/event.service'
 import { createEventAction } from '../actions'
+import { requireAuthContext } from '@/lib/auth/current-user'
 
 type NewEventPageProps = {
     searchParams: Promise<{
@@ -13,7 +14,8 @@ export default async function NewEventPage({
     searchParams,
 }: NewEventPageProps) {
     const { error } = await searchParams
-    const formOptions = await getEventFormOptions()
+    const auth = await requireAuthContext()
+    const formOptions = await getEventFormOptions(auth)
 
     return (
         <main className="mx-auto max-w-4xl p-8">

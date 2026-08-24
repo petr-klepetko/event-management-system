@@ -1,4 +1,5 @@
 import { EventStatus } from '@prisma/client'
+import { AuthContext, getTenantScopedWhere } from '@/lib/auth/current-user'
 import { prisma } from '@/lib/db/prisma'
 
 export type CreateEventInput = {
@@ -16,8 +17,9 @@ export type UpdateEventInput = CreateEventInput & {
     status: EventStatus
 }
 
-export async function getEvents() {
+export async function getEvents(auth: AuthContext) {
     return prisma.event.findMany({
+        where: getTenantScopedWhere(auth),
         orderBy: {
             dateStart: 'desc',
         },
@@ -28,10 +30,11 @@ export async function getEvents() {
     })
 }
 
-export async function getEventById(id: string) {
+export async function getEventById(id: string, auth: AuthContext) {
     return prisma.event.findUnique({
         where: {
             id,
+            ...getTenantScopedWhere(auth),
         },
         include: {
             client: true,
@@ -48,12 +51,15 @@ export async function getEventById(id: string) {
     })
 }
 
-export async function getEventFormOptions() {
+export async function getEventFormOptions(auth: AuthContext) {
+    const clientWhere = {
+        isActive: true,
+        ...getTenantScopedWhere(auth),
+    }
+
     const [clients, contacts] = await Promise.all([
         prisma.client.findMany({
-            where: {
-                isActive: true,
-            },
+            where: clientWhere,
             orderBy: {
                 name: 'asc',
             },
@@ -63,6 +69,12 @@ export async function getEventFormOptions() {
             },
         }),
         prisma.contactPerson.findMany({
+            where: auth.isAdmin
+                ? {}
+                : {
+                      tenantId: auth.tenantId ?? '__no_tenant_access__',
+                      client: clientWhere,
+                  },
             orderBy: [
                 {
                     lastName: 'asc',
@@ -88,12 +100,28 @@ export async function getEventFormOptions() {
     return { clients, contacts }
 }
 
-export async function createEvent(input: CreateEventInput) {
+export async function createEvent(input: CreateEventInput, auth: AuthContext) {
+    const client = await prisma.client.findUnique({
+        where: {
+            id: input.clientId,
+            ...getTenantScopedWhere(auth),
+        },
+        select: {
+            id: true,
+            tenantId: true,
+        },
+    })
+
+    if (!client) {
+        throw new Error('Klient neexistuje nebo k němu nemáš přístup.')
+    }
+
     if (input.primaryContactId) {
         const contact = await prisma.contactPerson.findFirst({
             where: {
                 id: input.primaryContactId,
                 clientId: input.clientId,
+                tenantId: client.tenantId,
             },
             select: {
                 id: true,
@@ -107,6 +135,8 @@ export async function createEvent(input: CreateEventInput) {
 
     return prisma.event.create({
         data: {
+            tenantId: client.tenantId,
+            ownerUserId: auth.userId,
             title: input.title,
             eventType: input.eventType,
             status: EventStatus.DRAFT,
@@ -114,17 +144,34 @@ export async function createEvent(input: CreateEventInput) {
             venueName: input.venueName ?? null,
             clientId: input.clientId,
             primaryContactId: input.primaryContactId ?? null,
+            createdByUserId: auth.userId,
             internalNote: input.internalNote ?? null,
         },
     })
 }
 
-export async function updateEvent(input: UpdateEventInput) {
+export async function updateEvent(input: UpdateEventInput, auth: AuthContext) {
+    const client = await prisma.client.findUnique({
+        where: {
+            id: input.clientId,
+            ...getTenantScopedWhere(auth),
+        },
+        select: {
+            id: true,
+            tenantId: true,
+        },
+    })
+
+    if (!client) {
+        throw new Error('Klient neexistuje nebo k němu nemáš přístup.')
+    }
+
     if (input.primaryContactId) {
         const contact = await prisma.contactPerson.findFirst({
             where: {
                 id: input.primaryContactId,
                 clientId: input.clientId,
+                tenantId: client.tenantId,
             },
             select: {
                 id: true,
@@ -139,8 +186,10 @@ export async function updateEvent(input: UpdateEventInput) {
     return prisma.event.update({
         where: {
             id: input.id,
+            ...getTenantScopedWhere(auth),
         },
         data: {
+            tenantId: client.tenantId,
             title: input.title,
             eventType: input.eventType,
             status: input.status,
@@ -153,10 +202,11 @@ export async function updateEvent(input: UpdateEventInput) {
     })
 }
 
-export async function deleteEvent(eventId: string) {
+export async function deleteEvent(eventId: string, auth: AuthContext) {
     const existingEventItem = await prisma.eventServiceItem.findFirst({
         where: {
             eventId,
+            ...getTenantScopedWhere(auth),
         },
         select: {
             id: true,
@@ -170,6 +220,11 @@ export async function deleteEvent(eventId: string) {
     const existingDocument = await prisma.document.findFirst({
         where: {
             eventId,
+            ...(auth.isAdmin
+                ? {}
+                : {
+                      tenantId: auth.tenantId ?? '__no_tenant_access__',
+                  }),
         },
         select: {
             id: true,
@@ -183,6 +238,7 @@ export async function deleteEvent(eventId: string) {
     return prisma.event.delete({
         where: {
             id: eventId,
+            ...getTenantScopedWhere(auth),
         },
     })
 }

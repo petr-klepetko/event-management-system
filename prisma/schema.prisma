@@ -9,6 +9,12 @@ datasource db {
 enum UserRole {
   ADMIN
   MANAGER
+  WORKER
+}
+
+enum TenantRole {
+  MANAGER
+  WORKER
 }
 
 enum ClientType {
@@ -44,11 +50,88 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   createdEvents Event[]   @relation("EventCreatedBy")
+  ownedClients   Client[]  @relation("ClientOwner")
+  ownedEvents    Event[]   @relation("EventOwner")
+  ownedServices  ServiceCatalogItem[] @relation("ServiceCatalogItemOwner")
+  ownedEventServiceItems EventServiceItem[] @relation("EventServiceItemOwner")
+  assignedServices ServiceCatalogItemAssignee[]
   documents     Document[] @relation("DocumentGeneratedBy")
+  memberships   TenantMembership[]
+  sessions      UserSession[]
+  sentInvites   TenantInvite[] @relation("TenantInviteInvitedBy")
+}
+
+model Tenant {
+  id         String    @id @default(cuid())
+  name       String
+  slug       String    @unique
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  memberships TenantMembership[]
+  invites     TenantInvite[]
+  clients     Client[]
+  contacts    ContactPerson[]
+  events      Event[]
+  services    ServiceCatalogItem[]
+  serviceAssignees ServiceCatalogItemAssignee[]
+  serviceItems EventServiceItem[]
+  documents   Document[]
+}
+
+model TenantMembership {
+  id        String     @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      TenantRole
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  user      User       @relation(fields: [userId], references: [id])
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+}
+
+model TenantInvite {
+  id              String     @id @default(cuid())
+  tenantId        String
+  email           String
+  role            TenantRole
+  tokenHash       String     @unique
+  invitedByUserId String
+  acceptedAt      DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime   @default(now())
+
+  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  invitedBy       User       @relation("TenantInviteInvitedBy", fields: [invitedByUserId], references: [id])
+
+  @@index([tenantId])
+  @@index([email])
+  @@index([invitedByUserId])
+}
+
+model UserSession {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Client {
   id         String          @id @default(cuid())
+  tenantId   String
+  ownerUserId String?
   type       ClientType
   name       String
   ico        String?
@@ -62,30 +145,41 @@ model Client {
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
 
+  tenant     Tenant          @relation(fields: [tenantId], references: [id])
+  ownerUser  User?           @relation("ClientOwner", fields: [ownerUserId], references: [id])
   contacts   ContactPerson[]
   events     Event[]
+
+  @@index([tenantId])
+  @@index([ownerUserId])
 }
 
 model ContactPerson {
   id         String   @id @default(cuid())
+  tenantId   String
   clientId   String
   firstName  String
   lastName   String
   email      String?
   phone      String?
   roleLabel  String?
+  note       String?
   isPrimary  Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
   client     Client   @relation(fields: [clientId], references: [id])
   events     Event[]  @relation("EventPrimaryContact")
 
+  @@index([tenantId])
   @@index([clientId])
 }
 
 model Event {
   id               String         @id @default(cuid())
+  tenantId         String
+  ownerUserId      String?
   title            String
   eventType        String
   status           EventStatus    @default(DRAFT)
@@ -100,6 +194,8 @@ model Event {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
+  tenant           Tenant         @relation(fields: [tenantId], references: [id])
+  ownerUser        User?          @relation("EventOwner", fields: [ownerUserId], references: [id])
   client           Client         @relation(fields: [clientId], references: [id])
   primaryContact   ContactPerson? @relation("EventPrimaryContact", fields: [primaryContactId], references: [id])
   createdByUser    User?          @relation("EventCreatedBy", fields: [createdByUserId], references: [id])
@@ -107,6 +203,8 @@ model Event {
   serviceItems     EventServiceItem[]
   documents        Document[]
 
+  @@index([tenantId])
+  @@index([ownerUserId])
   @@index([clientId])
   @@index([primaryContactId])
   @@index([createdByUserId])
@@ -114,6 +212,8 @@ model Event {
 
 model ServiceCatalogItem {
   id            String    @id @default(cuid())
+  tenantId      String
+  ownerUserId   String?
   name          String
   description   String?
   defaultPrice  Decimal   @db.Decimal(10, 2)
@@ -121,11 +221,36 @@ model ServiceCatalogItem {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  ownerUser     User?     @relation("ServiceCatalogItemOwner", fields: [ownerUserId], references: [id])
   eventItems    EventServiceItem[]
+  assignees     ServiceCatalogItemAssignee[]
+
+  @@index([tenantId])
+  @@index([ownerUserId])
+}
+
+model ServiceCatalogItemAssignee {
+  id                   String             @id @default(cuid())
+  tenantId             String
+  serviceCatalogItemId String
+  userId               String
+  createdAt            DateTime           @default(now())
+
+  tenant               Tenant             @relation(fields: [tenantId], references: [id])
+  serviceCatalogItem   ServiceCatalogItem @relation(fields: [serviceCatalogItemId], references: [id])
+  user                 User               @relation(fields: [userId], references: [id])
+
+  @@unique([serviceCatalogItemId, userId])
+  @@index([tenantId])
+  @@index([serviceCatalogItemId])
+  @@index([userId])
 }
 
 model EventServiceItem {
   id                   String              @id @default(cuid())
+  tenantId             String
+  ownerUserId          String?
   eventId              String
   serviceCatalogItemId String?
   customName           String
@@ -136,15 +261,20 @@ model EventServiceItem {
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
 
+  tenant               Tenant              @relation(fields: [tenantId], references: [id])
+  ownerUser            User?               @relation("EventServiceItemOwner", fields: [ownerUserId], references: [id])
   event                Event               @relation(fields: [eventId], references: [id])
   serviceCatalogItem   ServiceCatalogItem? @relation(fields: [serviceCatalogItemId], references: [id])
 
+  @@index([tenantId])
+  @@index([ownerUserId])
   @@index([eventId])
   @@index([serviceCatalogItemId])
 }
 
 model Document {
   id                String          @id @default(cuid())
+  tenantId          String
   eventId           String
   type              DocumentType
   versionNumber     Int
@@ -154,9 +284,11 @@ model Document {
   generatedByUserId String
   createdAt         DateTime        @default(now())
 
+  tenant            Tenant          @relation(fields: [tenantId], references: [id])
   event             Event           @relation(fields: [eventId], references: [id])
   generatedByUser   User            @relation("DocumentGeneratedBy", fields: [generatedByUserId], references: [id])
 
+  @@index([tenantId])
   @@unique([eventId, type, versionNumber])
   @@index([eventId])
   @@index([generatedByUserId])
