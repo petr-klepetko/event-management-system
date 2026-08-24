@@ -55,7 +55,68 @@ function ServicesTable({ services, inactive = false }: ServicesTableProps) {
     }
 
     return (
-        <div className="mt-4 overflow-x-auto">
+        <>
+        <div className="mt-4 grid gap-4 md:hidden">
+            {services.map((service) => {
+                const toggleService =
+                    setServiceCatalogItemActiveAction.bind(null, {
+                        serviceId: service.id,
+                        isActive: !service.isActive,
+                    })
+
+                return (
+                    <article
+                        key={service.id}
+                        className={`rounded-lg border border-slate-200 bg-white p-4 ${
+                            inactive ? 'opacity-75' : ''
+                        }`}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 className="text-base font-semibold">
+                                    {service.name}
+                                </h3>
+                                <p className="mt-1 text-sm font-medium">
+                                    {formatPrice(service.defaultPrice.toString())}
+                                </p>
+                            </div>
+                        </div>
+
+                        <dl className="mt-4 grid gap-3 text-sm">
+                            <div>
+                                <dt className="font-medium text-gray-500">Popis</dt>
+                                <dd className="mt-1 whitespace-pre-wrap break-words rounded-md bg-slate-50 px-3 py-2">
+                                    {service.description ?? '—'}
+                                </dd>
+                            </div>
+                        </dl>
+
+                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                            <Link
+                                href={`/services/${service.id}/edit`}
+                                className={compactSecondaryButtonClass}
+                            >
+                                Upravit
+                            </Link>
+                            <form action={toggleService}>
+                                <ConfirmSubmitButton
+                                    confirmMessage={
+                                        service.isActive
+                                            ? 'Opravdu chceš deaktivovat tuto službu?'
+                                            : 'Opravdu chceš znovu aktivovat tuto službu?'
+                                    }
+                                    className={compactSecondaryButtonClass}
+                                >
+                                    {service.isActive ? 'Deaktivovat' : 'Aktivovat'}
+                                </ConfirmSubmitButton>
+                            </form>
+                        </div>
+                    </article>
+                )
+            })}
+        </div>
+
+        <div className="mt-4 hidden overflow-x-auto md:block">
             <table className="min-w-full border-collapse">
                 <thead>
                     <tr className="border-b text-left">
@@ -119,6 +180,7 @@ function ServicesTable({ services, inactive = false }: ServicesTableProps) {
                 </tbody>
             </table>
         </div>
+        </>
     )
 }
 
@@ -133,7 +195,7 @@ export default async function ServicesPage({
     const successMessage = mapSuccessMessage(success)
 
     return (
-        <main className="mx-auto max-w-5xl p-8">
+        <main className="mx-auto max-w-5xl p-4 sm:p-8">
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
@@ -145,7 +207,7 @@ export default async function ServicesPage({
                 <h1 className="text-3xl font-bold">Katalog služeb</h1>
             </div>
 
-            <section className="mt-8 rounded-xl border p-6">
+            <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <h2 className="text-xl font-semibold">Aktivní služby</h2>
                     <Link
@@ -171,7 +233,7 @@ export default async function ServicesPage({
                 <ServicesTable services={activeServices} />
             </section>
 
-            <section className="mt-8 rounded-xl border border-gray-700 p-6">
+            <section className="mt-8 rounded-xl border border-gray-700 p-4 sm:p-6">
                 <h2 className="text-xl font-semibold text-gray-300">
                     Deaktivované služby
                 </h2>

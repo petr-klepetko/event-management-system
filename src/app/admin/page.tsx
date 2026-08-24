@@ -42,7 +42,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     const message = successMessage(success)
 
     return (
-        <main className="mx-auto max-w-6xl p-8">
+        <main className="mx-auto max-w-6xl p-4 sm:p-8">
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
@@ -69,7 +69,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </p>
             ) : null}
 
-            <section className="mt-8 rounded-xl border p-6">
+            <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Vytvořit tenant</h2>
                 <form action={createTenantAction} className="mt-4 grid gap-4">
                     <div className="grid gap-2 sm:grid-cols-2">
@@ -104,7 +104,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </form>
             </section>
 
-            <section className="mt-8 rounded-xl border p-6">
+            <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Vytvořit uživatele</h2>
                 <form action={createAdminUserAction} className="mt-4 grid gap-4">
                     <div className="grid gap-2 sm:grid-cols-2">
@@ -219,9 +219,90 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </form>
             </section>
 
-            <section className="mt-8 rounded-xl border p-6">
+            <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Uživatelé</h2>
-                <div className="mt-4 overflow-x-auto">
+
+                <div className="mt-4 grid gap-4 md:hidden">
+                    {overview.users.map((user) => {
+                        const toggleActive = setUserActiveAction.bind(null, {
+                            userId: user.id,
+                            isActive: !user.isActive,
+                        })
+                        const resetPassword = resetUserPasswordAction.bind(null, {
+                            userId: user.id,
+                        })
+
+                        return (
+                            <article
+                                key={user.id}
+                                className="rounded-lg border border-slate-200 bg-white p-4"
+                            >
+                                <div>
+                                    <h3 className="text-base font-semibold">
+                                        {user.fullName}
+                                    </h3>
+                                    <p className="mt-1 break-words text-sm text-gray-600">
+                                        {user.email}
+                                    </p>
+                                </div>
+
+                                <dl className="mt-4 grid gap-3 text-sm">
+                                    <div>
+                                        <dt className="font-medium text-gray-500">Role</dt>
+                                        <dd className="mt-1">{user.role}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="font-medium text-gray-500">Stav</dt>
+                                        <dd className="mt-1">
+                                            {user.isActive ? 'Aktivní' : 'Vypnutý'}
+                                        </dd>
+                                    </div>
+                                </dl>
+
+                                <form action={resetPassword} className="mt-4 grid gap-2">
+                                    <label
+                                        htmlFor={`mobile-password-${user.id}`}
+                                        className="text-sm font-medium text-gray-500"
+                                    >
+                                        Reset hesla
+                                    </label>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <input
+                                            id={`mobile-password-${user.id}`}
+                                            name="password"
+                                            type="text"
+                                            required
+                                            minLength={4}
+                                            className={inputClass}
+                                            placeholder="Nové heslo"
+                                        />
+                                        <button
+                                            type="submit"
+                                            className={compactSecondaryButtonClass}
+                                        >
+                                            Změnit
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <form action={toggleActive} className="mt-4">
+                                    <ConfirmSubmitButton
+                                        confirmMessage={
+                                            user.isActive
+                                                ? 'Opravdu chceš deaktivovat uživatele?'
+                                                : 'Opravdu chceš aktivovat uživatele?'
+                                        }
+                                        className={compactSecondaryButtonClass}
+                                    >
+                                        {user.isActive ? 'Deaktivovat' : 'Aktivovat'}
+                                    </ConfirmSubmitButton>
+                                </form>
+                            </article>
+                        )
+                    })}
+                </div>
+
+                <div className="mt-4 hidden overflow-x-auto md:block">
                     <table className="min-w-full border-collapse">
                         <thead>
                             <tr className="border-b text-left">
@@ -303,9 +384,38 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </div>
             </section>
 
-            <section className="mt-8 rounded-xl border p-6">
+            <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Tenanty</h2>
-                <div className="mt-4 overflow-x-auto">
+
+                <div className="mt-4 grid gap-4 md:hidden">
+                    {overview.tenants.map((tenant) => (
+                        <article
+                            key={tenant.id}
+                            className="rounded-lg border border-slate-200 bg-white p-4"
+                        >
+                            <h3 className="text-base font-semibold">{tenant.name}</h3>
+                            <dl className="mt-4 grid gap-3 text-sm">
+                                <div>
+                                    <dt className="font-medium text-gray-500">Slug</dt>
+                                    <dd className="mt-1 break-words">{tenant.slug}</dd>
+                                </div>
+                                <div>
+                                    <dt className="font-medium text-gray-500">
+                                        Vytvořeno
+                                    </dt>
+                                    <dd className="mt-1">
+                                        {new Intl.DateTimeFormat('cs-CZ', {
+                                            dateStyle: 'medium',
+                                            timeStyle: 'short',
+                                        }).format(tenant.createdAt)}
+                                    </dd>
+                                </div>
+                            </dl>
+                        </article>
+                    ))}
+                </div>
+
+                <div className="mt-4 hidden overflow-x-auto md:block">
                     <table className="min-w-full border-collapse">
                         <thead>
                             <tr className="border-b text-left">

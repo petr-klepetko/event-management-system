@@ -43,7 +43,7 @@ export default async function ClientDetailPage({
     })
 
     return (
-        <main className="mx-auto max-w-4xl p-8">
+        <main className="mx-auto max-w-4xl p-4 sm:p-8">
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
@@ -62,7 +62,7 @@ export default async function ClientDetailPage({
                 </Link>
             </div>
 
-            <section className="mt-8 rounded-xl border p-6">
+            <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Detail klienta</h2>
 
                 {success === 'KlientBylUlozen' ? (
@@ -109,7 +109,7 @@ export default async function ClientDetailPage({
                 </dl>
             </section>
 
-            <section className="mt-8 rounded-xl border p-6">
+            <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Akce klienta</h2>
 
                 {client.events.length === 0 ? (
@@ -117,7 +117,52 @@ export default async function ClientDetailPage({
                         Tento klient zatím nemá žádné akce.
                     </p>
                 ) : (
-                    <div className="mt-4 overflow-x-auto">
+                    <>
+                    <div className="mt-4 grid gap-4 md:hidden">
+                        {client.events.map((event) => (
+                            <article
+                                key={event.id}
+                                className="rounded-lg border border-slate-200 bg-white p-4"
+                            >
+                                <h3 className="text-base font-semibold">
+                                    <Link
+                                        href={`/events/${event.id}`}
+                                        className="underline underline-offset-4"
+                                    >
+                                        {event.title}
+                                    </Link>
+                                </h3>
+
+                                <dl className="mt-4 grid gap-3 text-sm">
+                                    <div>
+                                        <dt className="font-medium text-gray-500">Typ</dt>
+                                        <dd className="mt-1">{event.eventType}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="font-medium text-gray-500">Datum</dt>
+                                        <dd className="mt-1">
+                                            {new Intl.DateTimeFormat('cs-CZ', {
+                                                dateStyle: 'medium',
+                                                timeStyle: 'short',
+                                            }).format(event.dateStart)}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className="font-medium text-gray-500">Stav</dt>
+                                        <dd className="mt-1">
+                                            {mapEventStatusToLabel(event.status)}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className="font-medium text-gray-500">Místo</dt>
+                                        <dd className="mt-1">{event.venueName ?? '—'}</dd>
+                                    </div>
+                                </dl>
+                            </article>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 hidden overflow-x-auto md:block">
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
@@ -155,10 +200,11 @@ export default async function ClientDetailPage({
                             </tbody>
                         </table>
                     </div>
+                    </>
                 )}
             </section>
 
-            <section className="mt-8 rounded-xl border p-6">
+            <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Kontakty</h2>
 
                 {error ? (
@@ -184,7 +230,63 @@ export default async function ClientDetailPage({
                         Tento klient zatím nemá žádné kontakty.
                     </p>
                 ) : (
-                    <div className="mt-4 overflow-x-auto">
+                    <>
+                    <div className="mt-4 grid gap-4 md:hidden">
+                        {client.contacts.map((contact) => (
+                            <article
+                                key={contact.id}
+                                className="rounded-lg border border-slate-200 bg-white p-4"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <h3 className="text-base font-semibold">
+                                            {contact.firstName} {contact.lastName}
+                                        </h3>
+                                        <p className="mt-1 text-sm text-gray-600">
+                                            {contact.roleLabel ?? 'Role neuvedena'}
+                                        </p>
+                                    </div>
+                                    <Link
+                                        href={`/clients/${client.id}/contacts/${contact.id}/edit`}
+                                        className={compactSecondaryButtonClass}
+                                    >
+                                        Upravit
+                                    </Link>
+                                </div>
+
+                                <dl className="mt-4 grid gap-3 text-sm">
+                                    <div>
+                                        <dt className="font-medium text-gray-500">Telefon</dt>
+                                        <dd className="mt-1 break-words">
+                                            {contact.phone ?? '—'}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className="font-medium text-gray-500">Email</dt>
+                                        <dd className="mt-1 break-words">
+                                            {contact.email ?? '—'}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className="font-medium text-gray-500">
+                                            Hlavní kontakt
+                                        </dt>
+                                        <dd className="mt-1">
+                                            {contact.isPrimary ? 'Ano' : '—'}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className="font-medium text-gray-500">Poznámka</dt>
+                                        <dd className="mt-1 whitespace-pre-wrap break-words rounded-md bg-slate-50 px-3 py-2">
+                                            {contact.note ?? '—'}
+                                        </dd>
+                                    </div>
+                                </dl>
+                            </article>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 hidden overflow-x-auto md:block">
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
@@ -244,10 +346,11 @@ export default async function ClientDetailPage({
                             </tbody>
                         </table>
                     </div>
+                    </>
                 )}
             </section>
 
-            <section className="mt-8 rounded-xl border p-6">
+            <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Přidat kontakt</h2>
 
                 <form action={createContactForClient} className="mt-4 grid gap-4">

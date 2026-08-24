@@ -46,7 +46,7 @@ export default async function EventDetailPage({
     }
 
     return (
-        <main className="mx-auto max-w-5xl p-8">
+        <main className="mx-auto max-w-5xl p-4 sm:p-8">
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
@@ -73,7 +73,7 @@ export default async function EventDetailPage({
                 </div>
             </div>
 
-            <section className="mt-8 rounded-xl border p-6">
+            <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Detail akce</h2>
 
                 {success === 'AkceBylaUlozena' ? (
@@ -150,7 +150,7 @@ export default async function EventDetailPage({
                 ) : null}
             </section>
 
-            <section className="mt-8 rounded-xl border p-6">
+            <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <h2 className="text-xl font-semibold">Služby na akci</h2>
                     <Link
@@ -176,7 +176,77 @@ export default async function EventDetailPage({
                 {event.serviceItems.length === 0 ? (
                     <p className="mt-4 text-sm text-gray-600">Zatím nejsou přidané žádné služby.</p>
                 ) : (
-                    <div className="mt-4 overflow-x-auto">
+                    <>
+                    <div className="mt-4 grid gap-4 md:hidden">
+                        {event.serviceItems.map((item) => {
+                            const deleteServiceItem = deleteEventServiceItemAction.bind(null, {
+                                eventId: event.id,
+                                serviceItemId: item.id,
+                            })
+
+                            return (
+                                <article
+                                    key={item.id}
+                                    className="rounded-lg border border-slate-200 bg-white p-4"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <h3 className="text-base font-semibold">
+                                                {item.customName}
+                                            </h3>
+                                            <p className="mt-1 text-sm font-medium">
+                                                {formatPrice(item.price.toString())}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <dl className="mt-4 grid gap-3 text-sm">
+                                        <div>
+                                            <dt className="font-medium text-gray-500">
+                                                Zdroj v katalogu
+                                            </dt>
+                                            <dd className="mt-1">
+                                                {item.serviceCatalogItem?.name ?? '—'}
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt className="font-medium text-gray-500">Popis</dt>
+                                            <dd className="mt-1 whitespace-pre-wrap break-words rounded-md bg-slate-50 px-3 py-2">
+                                                {item.description ?? '—'}
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt className="font-medium text-gray-500">
+                                                Poznámka
+                                            </dt>
+                                            <dd className="mt-1 whitespace-pre-wrap break-words rounded-md bg-slate-50 px-3 py-2">
+                                                {item.note ?? '—'}
+                                            </dd>
+                                        </div>
+                                    </dl>
+
+                                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                                        <Link
+                                            href={`/events/${event.id}/services/${item.id}/edit`}
+                                            className={compactSecondaryButtonClass}
+                                        >
+                                            Upravit
+                                        </Link>
+                                        <form action={deleteServiceItem}>
+                                            <ConfirmSubmitButton
+                                                confirmMessage="Opravdu chceš smazat tuto službu?"
+                                                className={compactSecondaryButtonClass}
+                                            >
+                                                Smazat
+                                            </ConfirmSubmitButton>
+                                        </form>
+                                    </div>
+                                </article>
+                            )
+                        })}
+                    </div>
+
+                    <div className="mt-4 hidden overflow-x-auto md:block">
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
@@ -234,6 +304,7 @@ export default async function EventDetailPage({
                             </tbody>
                         </table>
                     </div>
+                    </>
                 )}
             </section>
         </main>
