@@ -52,6 +52,15 @@ export default async function HomePage() {
             </span>
           </Link>
           <Link
+            href="/finance"
+            className="rounded-md border p-4 transition-colors"
+          >
+            <span className="block font-semibold">Finance</span>
+            <span className="mt-2 block text-sm text-gray-600">
+              Fakturační ceny, náklady a zisk podle akcí.
+            </span>
+          </Link>
+          <Link
             href="/settings/users"
             className="rounded-md border p-4 transition-colors"
           >

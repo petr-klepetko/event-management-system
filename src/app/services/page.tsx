@@ -146,10 +146,10 @@ function ServicesTable({ services, inactive = false, listId }: ServicesTableProp
             <table className="min-w-full border-collapse">
                 <thead>
                     <tr className="border-b text-left">
-                        <th className="py-2 pr-4">Název</th>
-                        <th className="py-2 pr-4">Výchozí cena</th>
-                        <th className="py-2 pr-4">Popis</th>
-                        <th className="py-2 pr-4">Akce</th>
+                        <th className="py-2 px-2">Název</th>
+                        <th className="py-2 px-2">Výchozí cena</th>
+                        <th className="py-2 px-2">Popis</th>
+                        <th className="py-2 px-2">Akce</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -178,16 +178,16 @@ function ServicesTable({ services, inactive = false, listId }: ServicesTableProp
                                     inactive ? 'text-gray-400' : ''
                                 }`}
                             >
-                                <td className="py-2 pr-4 font-medium">
+                                <td className="py-2 px-2 font-medium">
                                     {service.name}
                                 </td>
-                                <td className="py-2 pr-4">
+                                <td className="py-2 px-2">
                                     {formatPrice(service.defaultPrice.toString())}
                                 </td>
-                                <td className="py-2 pr-4 whitespace-pre-wrap">
+                                <td className="py-2 px-2 whitespace-pre-wrap">
                                     {service.description ?? '—'}
                                 </td>
-                                <td className="py-2 pr-4">
+                                <td className="py-2 px-2">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Link
                                             href={`/services/${service.id}/edit`}

@@ -152,10 +152,6 @@ export default async function EventOfferPage({ params }: EventOfferPageProps) {
                                 <dt>Email</dt>
                                 <dd>{event.primaryContact?.email ?? '—'}</dd>
                             </div>
-                            <div>
-                                <dt>Instagram</dt>
-                                <dd>{event.primaryContact?.instagram ?? '—'}</dd>
-                            </div>
                         </dl>
                     </section>
                 </div>

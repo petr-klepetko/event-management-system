@@ -17,6 +17,11 @@ enum TenantRole {
   WORKER
 }
 
+enum EventServiceAssignmentRole {
+  RESPONSIBLE
+  WORKER
+}
+
 enum ClientType {
   COMPANY
   SCHOOL
@@ -54,6 +59,8 @@ model User {
   ownedEvents    Event[]   @relation("EventOwner")
   ownedServices  ServiceCatalogItem[] @relation("ServiceCatalogItemOwner")
   ownedEventServiceItems EventServiceItem[] @relation("EventServiceItemOwner")
+  eventServiceAssignments EventServiceItemAssignment[]
+  ownedEventCosts EventCost[] @relation("EventCostOwner")
   assignedServices ServiceCatalogItemAssignee[]
   documents     Document[] @relation("DocumentGeneratedBy")
   memberships   TenantMembership[]
@@ -76,6 +83,8 @@ model Tenant {
   services    ServiceCatalogItem[]
   serviceAssignees ServiceCatalogItemAssignee[]
   serviceItems EventServiceItem[]
+  eventServiceAssignments EventServiceItemAssignment[]
+  eventCosts EventCost[]
   documents   Document[]
 }
 
@@ -202,6 +211,7 @@ model Event {
   createdByUser    User?          @relation("EventCreatedBy", fields: [createdByUserId], references: [id])
 
   serviceItems     EventServiceItem[]
+  costs            EventCost[]
   documents        Document[]
 
   @@index([tenantId])
@@ -266,11 +276,53 @@ model EventServiceItem {
   ownerUser            User?               @relation("EventServiceItemOwner", fields: [ownerUserId], references: [id])
   event                Event               @relation(fields: [eventId], references: [id])
   serviceCatalogItem   ServiceCatalogItem? @relation(fields: [serviceCatalogItemId], references: [id])
+  assignments          EventServiceItemAssignment[]
 
   @@index([tenantId])
   @@index([ownerUserId])
   @@index([eventId])
   @@index([serviceCatalogItemId])
+}
+
+model EventServiceItemAssignment {
+  id                 String           @id @default(cuid())
+  tenantId           String
+  eventServiceItemId String
+  userId             String
+  role               EventServiceAssignmentRole @default(WORKER)
+  workDescription    String?
+  reward             Decimal          @db.Decimal(10, 2)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  tenant             Tenant           @relation(fields: [tenantId], references: [id])
+  eventServiceItem   EventServiceItem @relation(fields: [eventServiceItemId], references: [id], onDelete: Cascade)
+  user               User             @relation(fields: [userId], references: [id])
+
+  @@unique([eventServiceItemId, userId])
+  @@index([tenantId])
+  @@index([eventServiceItemId])
+  @@index([userId])
+}
+
+model EventCost {
+  id          String   @id @default(cuid())
+  tenantId    String
+  eventId     String
+  ownerUserId String?
+  name        String
+  amount      Decimal  @db.Decimal(10, 2)
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  ownerUser   User?    @relation("EventCostOwner", fields: [ownerUserId], references: [id])
+
+  @@index([tenantId])
+  @@index([eventId])
+  @@index([ownerUserId])
 }
 
 model Document {

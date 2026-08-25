@@ -10,7 +10,7 @@ import {
 import { getEventById, getEventFormOptions } from '@/modules/events/event.service'
 import { eventStatusOptions } from '@/modules/events/event.utils'
 import { updateEventAction } from '../../actions'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { canManageOwnedTenantData, requireAuthContext } from '@/lib/auth/current-user'
 
 type EditEventPageProps = {
     params: Promise<{
@@ -42,6 +42,10 @@ export default async function EditEventPage({
     ])
 
     if (!event) {
+        notFound()
+    }
+
+    if (!canManageOwnedTenantData(auth, event.ownerUserId)) {
         notFound()
     }
 

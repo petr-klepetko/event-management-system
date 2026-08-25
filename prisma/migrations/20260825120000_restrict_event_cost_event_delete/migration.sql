@@ -1,0 +1,8 @@
+ALTER TABLE "EventCost" DROP CONSTRAINT "EventCost_eventId_fkey";
+
+ALTER TABLE "EventCost"
+ADD CONSTRAINT "EventCost_eventId_fkey"
+FOREIGN KEY ("eventId")
+REFERENCES "Event"("id")
+ON DELETE RESTRICT
+ON UPDATE CASCADE;

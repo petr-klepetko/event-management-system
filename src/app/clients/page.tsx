@@ -133,11 +133,11 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             <table className="min-w-full border-collapse">
               <thead>
                 <tr className="border-b text-left">
-                  <th className="py-2 pr-4">Název</th>
-                  <th className="py-2 pr-4">Typ</th>
-                  <th className="py-2 pr-4">IČO</th>
-                  <th className="py-2 pr-4">Město</th>
-                  <th className="py-2 pr-4">Země</th>
+                  <th className="py-2 px-2">Název</th>
+                  <th className="py-2 px-2">Typ</th>
+                  <th className="py-2 px-2">IČO</th>
+                  <th className="py-2 px-2">Město</th>
+                  <th className="py-2 px-2">Země</th>
                 </tr>
               </thead>
               <tbody>
@@ -156,7 +156,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                       .join(' ')}
                     className="border-b"
                   >
-                    <td className="py-2 pr-4">
+                    <td className="py-2 px-2">
                       <Link
                         href={`/clients/${client.id}`}
                         className="underline underline-offset-4"
@@ -164,12 +164,12 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                         {client.name}
                       </Link>
                     </td>
-                    <td className="py-2 pr-4">
+                    <td className="py-2 px-2">
                       {mapClientTypeToLabel(client.type)}
                     </td>
-                    <td className="py-2 pr-4">{client.ico ?? '—'}</td>
-                    <td className="py-2 pr-4">{client.city ?? '—'}</td>
-                    <td className="py-2 pr-4">{client.country ?? '—'}</td>
+                    <td className="py-2 px-2">{client.ico ?? '—'}</td>
+                    <td className="py-2 px-2">{client.city ?? '—'}</td>
+                    <td className="py-2 px-2">{client.country ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>

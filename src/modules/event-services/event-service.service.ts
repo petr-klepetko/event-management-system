@@ -8,6 +8,7 @@ export type CreateEventServiceItemInput = {
   description?: string | null
   price: string
   note?: string | null
+  assignments?: EventServiceItemAssignmentInput[]
 }
 
 export type UpdateEventServiceItemInput = {
@@ -17,6 +18,14 @@ export type UpdateEventServiceItemInput = {
   description?: string | null
   price: string
   note?: string | null
+  assignments?: EventServiceItemAssignmentInput[]
+}
+
+export type EventServiceItemAssignmentInput = {
+  userId: string
+  role: 'RESPONSIBLE' | 'WORKER'
+  workDescription?: string | null
+  reward: string
 }
 
 export async function getServiceCatalogItems(auth: AuthContext) {
@@ -91,6 +100,65 @@ export async function getServiceCatalogItemsForEventServiceEdit(
   })
 }
 
+export async function getAssignableUsersForEvent(
+  eventId: string,
+  auth: AuthContext
+) {
+  const event = await prisma.event.findUnique({
+    where: {
+      id: eventId,
+      ...getTenantScopedWhere(auth),
+    },
+    select: {
+      tenantId: true,
+    },
+  })
+
+  if (!event) {
+    return []
+  }
+
+  return getAssignableUsersForTenant(event.tenantId, auth)
+}
+
+export async function getAssignableUsersForTenant(
+  tenantId: string,
+  auth: AuthContext
+) {
+  if (!auth.isAdmin && auth.tenantId !== tenantId) {
+    return []
+  }
+
+  const memberships = await prisma.tenantMembership.findMany({
+    where: {
+      tenantId,
+      isActive: true,
+      user: {
+        isActive: true,
+      },
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+        },
+      },
+    },
+    orderBy: [
+      {
+        user: {
+          fullName: 'asc',
+        },
+      },
+    ],
+  })
+
+  return memberships.map((membership) => membership.user)
+}
+
 export async function getEventServiceItemById(id: string, auth: AuthContext) {
   return prisma.eventServiceItem.findUnique({
     where: {
@@ -106,8 +174,70 @@ export async function getEventServiceItemById(id: string, auth: AuthContext) {
         },
       },
       serviceCatalogItem: true,
+      assignments: {
+        orderBy: {
+          createdAt: 'asc',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
+          },
+        },
+      },
     },
   })
+}
+
+async function assertAssignableUsers(
+  tenantId: string,
+  assignments: EventServiceItemAssignmentInput[] = []
+) {
+  const userIds = assignments.map((assignment) => assignment.userId)
+  const uniqueUserIds = new Set(userIds)
+
+  if (uniqueUserIds.size !== userIds.length) {
+    throw new Error('Každý pracovník může být ke službě přiřazený jen jednou.')
+  }
+
+  if (uniqueUserIds.size === 0) {
+    return
+  }
+
+  const usersCount = await prisma.tenantMembership.count({
+    where: {
+      tenantId,
+      userId: {
+        in: [...uniqueUserIds],
+      },
+      isActive: true,
+      user: {
+        isActive: true,
+      },
+    },
+  })
+
+  if (usersCount !== uniqueUserIds.size) {
+    throw new Error('Všichni pracovníci musí patřit do tenantu akce.')
+  }
+}
+
+function mapAssignmentCreateData(
+  tenantId: string,
+  eventServiceItemId: string,
+  assignments: EventServiceItemAssignmentInput[] = []
+) {
+  return assignments.map((assignment) => ({
+    tenantId,
+    eventServiceItemId,
+    userId: assignment.userId,
+    role: assignment.role,
+    workDescription: assignment.workDescription ?? null,
+    reward: assignment.reward,
+  }))
 }
 
 export async function createEventServiceItem(
@@ -153,18 +283,36 @@ export async function createEventServiceItem(
     },
   })
 
-  return prisma.eventServiceItem.create({
-    data: {
-      tenantId: event.tenantId,
-      ownerUserId: event.ownerUserId ?? auth.userId,
-      eventId: input.eventId,
-      serviceCatalogItemId: input.serviceCatalogItemId ?? null,
-      customName: input.customName,
-      description: input.description ?? null,
-      price: input.price,
-      note: input.note ?? null,
-      sortOrder: existingCount,
-    },
+  await assertAssignableUsers(event.tenantId, input.assignments)
+
+  return prisma.$transaction(async (tx) => {
+    const serviceItem = await tx.eventServiceItem.create({
+      data: {
+        tenantId: event.tenantId,
+        ownerUserId: event.ownerUserId ?? auth.userId,
+        eventId: input.eventId,
+        serviceCatalogItemId: input.serviceCatalogItemId ?? null,
+        customName: input.customName,
+        description: input.description ?? null,
+        price: input.price,
+        note: input.note ?? null,
+        sortOrder: existingCount,
+      },
+    })
+
+    const assignmentData = mapAssignmentCreateData(
+      event.tenantId,
+      serviceItem.id,
+      input.assignments
+    )
+
+    if (assignmentData.length > 0) {
+      await tx.eventServiceItemAssignment.createMany({
+        data: assignmentData,
+      })
+    }
+
+    return serviceItem
   })
 }
 
@@ -202,18 +350,42 @@ export async function updateEventServiceItem(
     }
   }
 
-  return prisma.eventServiceItem.update({
-    where: {
-      id: input.id,
-      ...getTenantScopedWhere(auth),
-    },
-    data: {
-      serviceCatalogItemId: input.serviceCatalogItemId ?? null,
-      customName: input.customName,
-      description: input.description ?? null,
-      price: input.price,
-      note: input.note ?? null,
-    },
+  await assertAssignableUsers(serviceItem.tenantId, input.assignments)
+
+  return prisma.$transaction(async (tx) => {
+    const updatedServiceItem = await tx.eventServiceItem.update({
+      where: {
+        id: input.id,
+        ...getTenantScopedWhere(auth),
+      },
+      data: {
+        serviceCatalogItemId: input.serviceCatalogItemId ?? null,
+        customName: input.customName,
+        description: input.description ?? null,
+        price: input.price,
+        note: input.note ?? null,
+      },
+    })
+
+    await tx.eventServiceItemAssignment.deleteMany({
+      where: {
+        eventServiceItemId: input.id,
+      },
+    })
+
+    const assignmentData = mapAssignmentCreateData(
+      serviceItem.tenantId,
+      input.id,
+      input.assignments
+    )
+
+    if (assignmentData.length > 0) {
+      await tx.eventServiceItemAssignment.createMany({
+        data: assignmentData,
+      })
+    }
+
+    return updatedServiceItem
   })
 }
 

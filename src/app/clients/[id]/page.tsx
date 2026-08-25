@@ -202,11 +202,11 @@ export default async function ClientDetailPage({
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
-                                    <th className="py-2 pr-4">Název</th>
-                                    <th className="py-2 pr-4">Typ</th>
-                                    <th className="py-2 pr-4">Datum</th>
-                                    <th className="py-2 pr-4">Stav</th>
-                                    <th className="py-2 pr-4">Místo</th>
+                                    <th className="py-2 px-2">Název</th>
+                                    <th className="py-2 px-2">Typ</th>
+                                    <th className="py-2 px-2">Datum</th>
+                                    <th className="py-2 px-2">Stav</th>
+                                    <th className="py-2 px-2">Místo</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -227,7 +227,7 @@ export default async function ClientDetailPage({
                                         data-filter-text={filterText}
                                         className="border-b"
                                     >
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             <Link
                                                 href={`/events/${event.id}`}
                                                 className="underline underline-offset-4"
@@ -235,17 +235,17 @@ export default async function ClientDetailPage({
                                                 {event.title}
                                             </Link>
                                         </td>
-                                        <td className="py-2 pr-4">{event.eventType}</td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">{event.eventType}</td>
+                                        <td className="py-2 px-2">
                                             {new Intl.DateTimeFormat('cs-CZ', {
                                                 dateStyle: 'medium',
                                                 timeStyle: 'short',
                                             }).format(event.dateStart)}
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             {mapEventStatusToLabel(event.status)}
                                         </td>
-                                        <td className="py-2 pr-4">{event.venueName ?? '—'}</td>
+                                        <td className="py-2 px-2">{event.venueName ?? '—'}</td>
                                     </tr>
                                     )
                                 })}
@@ -378,11 +378,11 @@ export default async function ClientDetailPage({
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
-                                    <th className="py-2 pr-4">Jméno</th>
-                                    <th className="py-2 pr-4">Kontakt</th>
-                                    <th className="py-2 pr-4">Role</th>
-                                    <th className="py-2 pr-4">Hlavní kontakt</th>
-                                    <th className="py-2 pr-4">Akce</th>
+                                    <th className="py-2 px-2">Jméno</th>
+                                    <th className="py-2 px-2">Kontakt</th>
+                                    <th className="py-2 px-2">Role</th>
+                                    <th className="py-2 px-2">Hlavní kontakt</th>
+                                    <th className="py-2 px-2">Akce</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -406,10 +406,10 @@ export default async function ClientDetailPage({
                                             data-filter-item
                                             data-filter-text={filterText}
                                         >
-                                            <td className="py-3 pr-4 font-medium">
+                                            <td className="py-3 px-2 font-medium">
                                                 {contact.firstName} {contact.lastName}
                                             </td>
-                                            <td className="py-3 pr-4">
+                                            <td className="py-3 px-2">
                                                 <div className="grid gap-1">
                                                     <div>
                                                         <span className="text-gray-500">telefon: </span>
@@ -425,11 +425,11 @@ export default async function ClientDetailPage({
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="py-3 pr-4">{contact.roleLabel ?? '—'}</td>
-                                            <td className="py-3 pr-4">
+                                            <td className="py-3 px-2">{contact.roleLabel ?? '—'}</td>
+                                            <td className="py-3 px-2">
                                                 {contact.isPrimary ? 'Ano' : '—'}
                                             </td>
-                                            <td className="py-3 pr-4 whitespace-nowrap">
+                                            <td className="py-3 px-2 whitespace-nowrap">
                                                 <Link
                                                     href={`/clients/${client.id}/contacts/${contact.id}/edit`}
                                                     className={compactSecondaryButtonClass}

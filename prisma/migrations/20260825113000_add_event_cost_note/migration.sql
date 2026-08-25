@@ -1,0 +1,1 @@
+ALTER TABLE "EventCost" ADD COLUMN "note" TEXT;

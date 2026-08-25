@@ -196,10 +196,10 @@ export default async function TenantUsersPage({
                     <table className="min-w-full border-collapse">
                         <thead>
                             <tr className="border-b text-left">
-                                <th className="py-2 pr-4">Jméno</th>
-                                <th className="py-2 pr-4">Email</th>
-                                <th className="py-2 pr-4">Tenant</th>
-                                <th className="py-2 pr-4">Role</th>
+                                <th className="py-2 px-2">Jméno</th>
+                                <th className="py-2 px-2">Email</th>
+                                <th className="py-2 px-2">Tenant</th>
+                                <th className="py-2 px-2">Role</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -226,16 +226,16 @@ export default async function TenantUsersPage({
                                         data-filter-text={filterText}
                                         className="border-b"
                                     >
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             {membership.user.fullName}
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             {membership.user.email}
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             {membership.tenant.name}
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             <form
                                                 action={updateRole}
                                                 className="flex flex-wrap items-center gap-2"
@@ -339,9 +339,9 @@ export default async function TenantUsersPage({
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
-                                    <th className="py-2 pr-4">Email</th>
-                                    <th className="py-2 pr-4">Role</th>
-                                    <th className="py-2 pr-4">Platí do</th>
+                                    <th className="py-2 px-2">Email</th>
+                                    <th className="py-2 px-2">Role</th>
+                                    <th className="py-2 px-2">Platí do</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -358,11 +358,11 @@ export default async function TenantUsersPage({
                                             data-filter-text={`${tenantInvite.email} ${roleLabel}`}
                                             className="border-b"
                                         >
-                                            <td className="py-2 pr-4">
+                                            <td className="py-2 px-2">
                                                 {tenantInvite.email}
                                             </td>
-                                            <td className="py-2 pr-4">{roleLabel}</td>
-                                            <td className="py-2 pr-4">
+                                            <td className="py-2 px-2">{roleLabel}</td>
+                                            <td className="py-2 px-2">
                                                 {new Intl.DateTimeFormat('cs-CZ', {
                                                     dateStyle: 'medium',
                                                     timeStyle: 'short',

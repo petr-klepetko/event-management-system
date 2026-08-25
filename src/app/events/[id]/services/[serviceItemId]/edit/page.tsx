@@ -1,9 +1,11 @@
 import { notFound } from 'next/navigation'
 import {
+    getAssignableUsersForTenant,
     getEventServiceItemById,
     getServiceCatalogItemsForEventServiceEdit,
 } from '@/modules/event-services/event-service.service'
 import { updateEventServiceItemAction } from './actions'
+import EventServiceAssignmentsEditor from '@/components/forms/EventServiceAssignmentsEditor'
 import SearchableSelect from '@/components/forms/SearchableSelect'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
@@ -46,10 +48,13 @@ export default async function EditEventServiceItemPage({
         notFound()
     }
 
-    const serviceCatalogItems = await getServiceCatalogItemsForEventServiceEdit(
-        serviceItem.serviceCatalogItemId,
-        serviceItem.event.tenantId
-    )
+    const [serviceCatalogItems, assignableUsers] = await Promise.all([
+        getServiceCatalogItemsForEventServiceEdit(
+            serviceItem.serviceCatalogItemId,
+            serviceItem.event.tenantId
+        ),
+        getAssignableUsersForTenant(serviceItem.event.tenantId, auth),
+    ])
 
     const updateAction = updateEventServiceItemAction.bind(null, {
         eventId,
@@ -167,6 +172,19 @@ export default async function EditEventServiceItemPage({
                             className={inputClass}
                         />
                     </div>
+
+                    <EventServiceAssignmentsEditor
+                        users={assignableUsers}
+                        defaultAssignments={serviceItem.assignments.map(
+                            (assignment) => ({
+                                id: assignment.id,
+                                userId: assignment.userId,
+                                role: assignment.role,
+                                workDescription: assignment.workDescription,
+                                reward: assignment.reward.toString(),
+                            })
+                        )}
+                    />
 
                     <button type="submit" className={buttonClass}>
                         Uložit změny

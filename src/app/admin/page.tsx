@@ -329,12 +329,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <table className="min-w-full border-collapse">
                         <thead>
                             <tr className="border-b text-left">
-                                <th className="py-2 pr-4">Jméno</th>
-                                <th className="py-2 pr-4">Login</th>
-                                <th className="py-2 pr-4">Role</th>
-                                <th className="py-2 pr-4">Stav</th>
-                                <th className="py-2 pr-4">Reset hesla</th>
-                                <th className="py-2 pr-4">Akce</th>
+                                <th className="py-2 px-2">Jméno</th>
+                                <th className="py-2 px-2">Login</th>
+                                <th className="py-2 px-2">Role</th>
+                                <th className="py-2 px-2">Stav</th>
+                                <th className="py-2 px-2">Reset hesla</th>
+                                <th className="py-2 px-2">Akce</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -361,19 +361,19 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                         data-filter-text={filterText}
                                         className="border-b"
                                     >
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             {user.fullName}
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             {user.email}
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             {user.role}
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             {user.isActive ? 'Aktivní' : 'Vypnutý'}
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             <form
                                                 action={resetPassword}
                                                 className="flex items-center gap-2"
@@ -394,7 +394,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                                 </button>
                                             </form>
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             <form action={toggleActive}>
                                                 <ConfirmSubmitButton
                                                     confirmMessage={
@@ -468,9 +468,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <table className="min-w-full border-collapse">
                         <thead>
                             <tr className="border-b text-left">
-                                <th className="py-2 pr-4">Název</th>
-                                <th className="py-2 pr-4">Slug</th>
-                                <th className="py-2 pr-4">Vytvořeno</th>
+                                <th className="py-2 px-2">Název</th>
+                                <th className="py-2 px-2">Slug</th>
+                                <th className="py-2 px-2">Vytvořeno</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -481,9 +481,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                     data-filter-text={`${tenant.name} ${tenant.slug}`}
                                     className="border-b"
                                 >
-                                    <td className="py-2 pr-4">{tenant.name}</td>
-                                    <td className="py-2 pr-4">{tenant.slug}</td>
-                                    <td className="py-2 pr-4">
+                                    <td className="py-2 px-2">{tenant.name}</td>
+                                    <td className="py-2 px-2">{tenant.slug}</td>
+                                    <td className="py-2 px-2">
                                         {new Intl.DateTimeFormat('cs-CZ', {
                                             dateStyle: 'medium',
                                             timeStyle: 'short',

@@ -1,6 +1,7 @@
 'use client'
 
 import SearchableSelect from '@/components/forms/SearchableSelect'
+import EventServiceAssignmentsEditor from '@/components/forms/EventServiceAssignmentsEditor'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { useState } from 'react'
 
@@ -13,10 +14,19 @@ type CatalogItem = {
 
 type Props = {
     catalogItems: CatalogItem[]
+    assignableUsers: Array<{
+        id: string
+        fullName: string
+        email: string
+    }>
     action: (formData: FormData) => void
 }
 
-export default function AddServiceForm({ catalogItems, action }: Props) {
+export default function AddServiceForm({
+    catalogItems,
+    assignableUsers,
+    action,
+}: Props) {
     const [customName, setCustomName] = useState('')
     const [price, setPrice] = useState('')
     const [description, setDescription] = useState('')
@@ -99,6 +109,8 @@ export default function AddServiceForm({ catalogItems, action }: Props) {
                     className={inputClass}
                 />
             </div>
+
+            <EventServiceAssignmentsEditor users={assignableUsers} />
 
             <button
                 type="submit"

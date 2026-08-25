@@ -10,7 +10,7 @@ import {
     compactSecondaryButtonClass,
     primaryButtonClass,
 } from '@/lib/ui/styles'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { canManageOwnedTenantData, requireAuthContext } from '@/lib/auth/current-user'
 
 export const dynamic = 'force-dynamic'
 
@@ -104,6 +104,10 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                             const deleteEventFormAction = deleteEventAction.bind(null, {
                                 eventId: event.id,
                             })
+                            const canManageEvent = canManageOwnedTenantData(
+                                auth,
+                                event.ownerUserId
+                            )
                             const primaryContactName = event.primaryContact
                                 ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
                                 : ''
@@ -184,22 +188,24 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                         </div>
                                     </dl>
 
-                                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                                        <Link
-                                            href={`/events/${event.id}/edit`}
-                                            className={compactSecondaryButtonClass}
-                                        >
-                                            Upravit
-                                        </Link>
-                                        <form action={deleteEventFormAction}>
-                                            <ConfirmSubmitButton
-                                                confirmMessage="Opravdu chceš smazat tuto událost?"
+                                    {canManageEvent ? (
+                                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                                            <Link
+                                                href={`/events/${event.id}/edit`}
                                                 className={compactSecondaryButtonClass}
                                             >
-                                                Smazat
-                                            </ConfirmSubmitButton>
-                                        </form>
-                                    </div>
+                                                Upravit
+                                            </Link>
+                                            <form action={deleteEventFormAction}>
+                                                <ConfirmSubmitButton
+                                                    confirmMessage="Opravdu chceš smazat tuto událost?"
+                                                    className={compactSecondaryButtonClass}
+                                                >
+                                                    Smazat
+                                                </ConfirmSubmitButton>
+                                            </form>
+                                        </div>
+                                    ) : null}
                                 </article>
                             )
                         })}
@@ -209,14 +215,14 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
-                                    <th className="py-2 pr-4">Název</th>
-                                    <th className="py-2 pr-4">Typ</th>
-                                    <th className="py-2 pr-4">Datum</th>
-                                    <th className="py-2 pr-4">Klient</th>
-                                    <th className="py-2 pr-4">Kontakt</th>
-                                    <th className="py-2 pr-4">Stav</th>
-                                    <th className="py-2 pr-4">Místo</th>
-                                    <th className="py-2 pr-4 whitespace-nowrap">Akce</th>
+                                    <th className="py-2 px-2">Název</th>
+                                    <th className="py-2 px-2">Typ</th>
+                                    <th className="py-2 px-2">Datum</th>
+                                    <th className="py-2 px-2">Klient</th>
+                                    <th className="py-2 px-2">Kontakt</th>
+                                    <th className="py-2 px-2">Stav</th>
+                                    <th className="py-2 px-2">Místo</th>
+                                    <th className="py-2 px-2 whitespace-nowrap">Akce</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -224,6 +230,10 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                     const deleteEventFormAction = deleteEventAction.bind(null, {
                                         eventId: event.id,
                                     })
+                                    const canManageEvent = canManageOwnedTenantData(
+                                        auth,
+                                        event.ownerUserId
+                                    )
                                     const primaryContactName = event.primaryContact
                                         ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
                                         : ''
@@ -249,7 +259,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                             data-filter-text={filterText}
                                             className="border-b"
                                         >
-                                            <td className="py-2 pr-4">
+                                            <td className="py-2 px-2">
                                                 <Link
                                                     href={`/events/${event.id}`}
                                                     className="underline underline-offset-4"
@@ -257,14 +267,14 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                                     {event.title}
                                                 </Link>
                                             </td>
-                                            <td className="py-2 pr-4">{event.eventType}</td>
-                                            <td className="py-2 pr-4">
+                                            <td className="py-2 px-2">{event.eventType}</td>
+                                            <td className="py-2 px-2">
                                                 {new Intl.DateTimeFormat('cs-CZ', {
                                                     dateStyle: 'medium',
                                                     timeStyle: 'short',
                                                 }).format(event.dateStart)}
                                             </td>
-                                            <td className="py-2 pr-4">
+                                            <td className="py-2 px-2">
                                                 <Link
                                                     href={`/clients/${event.client.id}`}
                                                     className="underline underline-offset-4"
@@ -272,32 +282,36 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                                     {event.client.name}
                                                 </Link>
                                             </td>
-                                            <td className="py-2 pr-4">
+                                            <td className="py-2 px-2">
                                                 {event.primaryContact
                                                     ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
                                                     : '—'}
                                             </td>
-                                            <td className="py-2 pr-4">
+                                            <td className="py-2 px-2">
                                                 {mapEventStatusToLabel(event.status)}
                                             </td>
-                                            <td className="py-2 pr-4">{event.venueName ?? '—'}</td>
-                                            <td className="py-2 pr-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-2">
-                                                    <Link
-                                                        href={`/events/${event.id}/edit`}
-                                                        className={compactSecondaryButtonClass}
-                                                    >
-                                                        Upravit
-                                                    </Link>
-                                                    <form action={deleteEventFormAction}>
-                                                    <ConfirmSubmitButton
-                                                        confirmMessage="Opravdu chceš smazat tuto událost?"
-                                                        className={compactSecondaryButtonClass}
-                                                    >
-                                                        Smazat
-                                                    </ConfirmSubmitButton>
-                                                    </form>
-                                                </div>
+                                            <td className="py-2 px-2">{event.venueName ?? '—'}</td>
+                                            <td className="py-2 px-2 whitespace-nowrap">
+                                                {canManageEvent ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <Link
+                                                            href={`/events/${event.id}/edit`}
+                                                            className={compactSecondaryButtonClass}
+                                                        >
+                                                            Upravit
+                                                        </Link>
+                                                        <form action={deleteEventFormAction}>
+                                                            <ConfirmSubmitButton
+                                                                confirmMessage="Opravdu chceš smazat tuto událost?"
+                                                                className={compactSecondaryButtonClass}
+                                                            >
+                                                                Smazat
+                                                            </ConfirmSubmitButton>
+                                                        </form>
+                                                    </div>
+                                                ) : (
+                                                    '—'
+                                                )}
                                             </td>
                                         </tr>
                                     )
