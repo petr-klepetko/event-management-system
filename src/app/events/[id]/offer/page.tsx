@@ -5,7 +5,7 @@ import PrintButton from '@/components/print/PrintButton'
 import { primaryButtonClass, secondaryButtonClass } from '@/lib/ui/styles'
 import { getEventById } from '@/modules/events/event.service'
 import { mapEventStatusToLabel } from '@/modules/events/event.utils'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { canManageOwnedTenantData, requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type EventOfferPageProps = {
     params: Promise<{
@@ -37,10 +37,14 @@ function formatPrice(value: string | number) {
 
 export default async function EventOfferPage({ params }: EventOfferPageProps) {
     const { id } = await params
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
     const event = await getEventById(id, auth)
 
     if (!event) {
+        notFound()
+    }
+
+    if (!canManageOwnedTenantData(auth, event.ownerUserId)) {
         notFound()
     }
 

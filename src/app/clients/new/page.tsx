@@ -1,6 +1,7 @@
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import { buttonClass, inputClass, optionClass } from '@/lib/ui/styles'
 import { createClientAction } from '../actions'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type NewClientPageProps = {
     searchParams: Promise<{
@@ -11,6 +12,7 @@ type NewClientPageProps = {
 export default async function NewClientPage({
     searchParams,
 }: NewClientPageProps) {
+    await requireTenantManagerContext()
     const { error } = await searchParams
 
     return (

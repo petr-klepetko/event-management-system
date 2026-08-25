@@ -3,7 +3,7 @@ import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import { buttonClass, inputClass, optionClass } from '@/lib/ui/styles'
 import { getClientById } from '@/modules/clients/client.service'
 import { updateClientAction } from '../../actions'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type EditClientPageProps = {
     params: Promise<{
@@ -20,7 +20,7 @@ export default async function EditClientPage({
 }: EditClientPageProps) {
     const { id } = await params
     const { error } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
     const client = await getClientById(id, auth)
 
     if (!client) {

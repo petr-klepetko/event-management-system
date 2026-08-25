@@ -1,9 +1,9 @@
-'use server'
+﻿'use server'
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { updateEventServiceItem } from '@/modules/event-services/event-service.service'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 import { readEventServiceAssignments } from '../../../service-assignment-form'
 
 type UpdateEventServiceItemActionArgs = {
@@ -15,10 +15,10 @@ export async function updateEventServiceItemAction(
     args: UpdateEventServiceItemActionArgs,
     formData: FormData
 ) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
 
     try {
-        const auth = await requireAuthContext()
         const serviceCatalogItemId = String(formData.get('serviceCatalogItemId') ?? '').trim()
         const customName = String(formData.get('customName') ?? '').trim()
         const description = String(formData.get('description') ?? '').trim()

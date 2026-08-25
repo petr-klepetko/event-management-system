@@ -9,7 +9,7 @@ import EventServiceAssignmentsEditor from '@/components/forms/EventServiceAssign
 import SearchableSelect from '@/components/forms/SearchableSelect'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type EditEventServiceItemPageProps = {
     params: Promise<{
@@ -36,7 +36,7 @@ export default async function EditEventServiceItemPage({
 }: EditEventServiceItemPageProps) {
     const { id: eventId, serviceItemId } = await params
     const { error } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
 
     const serviceItem = await getEventServiceItemById(serviceItemId, auth)
 

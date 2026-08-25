@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { updateContact } from '@/modules/clients/client.service'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type UpdateContactActionArgs = {
     clientId: string
@@ -14,10 +14,10 @@ export async function updateContactAction(
     args: UpdateContactActionArgs,
     formData: FormData
 ) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
 
     try {
-        const auth = await requireAuthContext()
         const firstName = String(formData.get('firstName') ?? '').trim()
         const lastName = String(formData.get('lastName') ?? '').trim()
         const email = String(formData.get('email') ?? '').trim()

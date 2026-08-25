@@ -6,7 +6,7 @@ import {
     optionClass,
     primaryButtonClass,
 } from '@/lib/ui/styles'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 import {
     getTenantInvites,
     getTenantUsers,
@@ -27,7 +27,7 @@ export default async function TenantUsersPage({
     searchParams,
 }: TenantUsersPageProps) {
     const { error, invite } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
     const [memberships, invites] = await Promise.all([
         getTenantUsers(auth),
         getTenantInvites(auth),

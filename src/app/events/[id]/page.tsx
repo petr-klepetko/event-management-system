@@ -20,7 +20,11 @@ import {
     primaryButtonClass,
     secondaryButtonClass,
 } from '@/lib/ui/styles'
-import { canManageOwnedTenantData, requireAuthContext } from '@/lib/auth/current-user'
+import {
+    canManageOwnedTenantData,
+    isWorkerContext,
+    requireAuthContext,
+} from '@/lib/auth/current-user'
 
 type EventDetailPageProps = {
     params: Promise<{
@@ -60,8 +64,26 @@ export default async function EventDetailPage({
         notFound()
     }
 
-    const finance = calculateEventFinance(event)
-    const canManageEvent = canManageOwnedTenantData(auth, event.ownerUserId)
+    const isWorker = isWorkerContext(auth)
+    const finance = isWorker ? null : calculateEventFinance(event)
+    const visibleServiceItems = isWorker
+        ? event.serviceItems.flatMap((item) => {
+              const assignments = item.assignments.filter(
+                  (assignment) => assignment.user.id === auth.userId
+              )
+
+              return assignments.length > 0
+                  ? [
+                        {
+                            ...item,
+                            assignments,
+                        },
+                    ]
+                  : []
+          })
+        : event.serviceItems
+    const canManageEvent =
+        !isWorker && canManageOwnedTenantData(auth, event.ownerUserId)
     const createCost = createEventCostAction.bind(null, {
         eventId: event.id,
     })
@@ -79,12 +101,14 @@ export default async function EventDetailPage({
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-3xl font-bold">{event.title}</h1>
                 <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                        href={`/events/${event.id}/offer`}
-                        className={secondaryButtonClass}
-                    >
-                        Náhled nabídky
-                    </Link>
+                    {!isWorker ? (
+                        <Link
+                            href={`/events/${event.id}/offer`}
+                            className={secondaryButtonClass}
+                        >
+                            Náhled nabídky
+                        </Link>
+                    ) : null}
                     {canManageEvent ? (
                         <Link
                             href={`/events/${event.id}/edit`}
@@ -133,17 +157,19 @@ export default async function EventDetailPage({
                         <dd className="mt-1">{event.venueName ?? '—'}</dd>
                     </div>
 
-                    <div>
-                        <dt className="text-sm text-gray-500">Klient</dt>
-                        <dd className="mt-1">
-                            <Link
-                                href={`/clients/${event.client.id}`}
-                                className="underline underline-offset-4"
-                            >
-                                {event.client.name}
-                            </Link>
-                        </dd>
-                    </div>
+                    {!isWorker ? (
+                        <div>
+                            <dt className="text-sm text-gray-500">Klient</dt>
+                            <dd className="mt-1">
+                                <Link
+                                    href={`/clients/${event.client.id}`}
+                                    className="underline underline-offset-4"
+                                >
+                                    {event.client.name}
+                                </Link>
+                            </dd>
+                        </div>
+                    ) : null}
 
                     <div>
                         <dt className="text-sm text-gray-500">Hlavní kontakt</dt>
@@ -172,7 +198,7 @@ export default async function EventDetailPage({
                     </div>
                 </dl>
 
-                {event.internalNote ? (
+                {!isWorker && event.internalNote ? (
                     <div className="mt-6">
                         <h3 className="text-sm text-gray-500">Interní poznámka</h3>
                         <p className="mt-1 whitespace-pre-wrap">{event.internalNote}</p>
@@ -180,6 +206,7 @@ export default async function EventDetailPage({
                 ) : null}
             </section>
 
+            {finance ? (
             <section className="mt-8 grid gap-3 sm:grid-cols-3 rounded-lg p-4 sm:p-6 border">
                 <div className="rounded-lg border border-slate-200 bg-white p-4">
                     <p className="text-sm font-medium text-gray-500">
@@ -207,10 +234,13 @@ export default async function EventDetailPage({
                     </p>
                 </div>
             </section>
+            ) : null}
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="text-xl font-semibold">Služby na akci</h2>
+                    <h2 className="text-xl font-semibold">
+                        {isWorker ? 'Moje služby na akci' : 'Služby na akci'}
+                    </h2>
                     {canManageEvent ? (
                         <Link
                             href={`/events/${event.id}/services/new`}
@@ -233,8 +263,124 @@ export default async function EventDetailPage({
                     </p>
                 ) : null}
 
-                {event.serviceItems.length === 0 ? (
-                    <p className="mt-4 text-sm text-gray-600">Zatím nejsou přidané žádné služby.</p>
+                {visibleServiceItems.length === 0 ? (
+                    <p className="mt-4 text-sm text-gray-600">
+                        {isWorker
+                            ? 'Na této akci zatím nemáš přiřazenou žádnou službu.'
+                            : 'Zatím nejsou přidané žádné služby.'}
+                    </p>
+                ) : isWorker ? (
+                    <>
+                        <ClientSideListFilter
+                            listId="event-services"
+                            placeholder="Hledat podle služby, role nebo popisu práce..."
+                        />
+
+                        <p
+                            data-filter-empty="event-services"
+                            hidden
+                            className="mt-4 text-sm text-gray-600"
+                        >
+                            Žádná služba neodpovídá filtru.
+                        </p>
+
+                        <div data-filter-list="event-services" className="mt-4 grid gap-4 md:hidden">
+                            {visibleServiceItems.flatMap((item) =>
+                                item.assignments.map((assignment) => {
+                                    const filterText = [
+                                        item.customName,
+                                        mapAssignmentRoleToLabel(assignment.role),
+                                        assignment.workDescription,
+                                        assignment.reward.toString(),
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' ')
+
+                                    return (
+                                        <article
+                                            key={`${item.id}-${assignment.id}`}
+                                            data-filter-item
+                                            data-filter-text={filterText}
+                                            className="rounded-lg border border-slate-200 bg-white p-4"
+                                        >
+                                            <h3 className="text-base font-semibold">
+                                                {item.customName}
+                                            </h3>
+                                            <dl className="mt-4 grid gap-3 text-sm">
+                                                <div>
+                                                    <dt className="font-medium text-gray-500">Role</dt>
+                                                    <dd className="mt-1">
+                                                        {mapAssignmentRoleToLabel(assignment.role)}
+                                                    </dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="font-medium text-gray-500">Popis práce</dt>
+                                                    <dd className="mt-1 whitespace-pre-wrap break-words rounded-md bg-slate-50 px-3 py-2">
+                                                        {assignment.workDescription ?? '—'}
+                                                    </dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="font-medium text-gray-500">Moje odměna</dt>
+                                                    <dd className="mt-1 font-semibold">
+                                                        {formatPrice(assignment.reward.toString())}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+                                        </article>
+                                    )
+                                })
+                            )}
+                        </div>
+
+                        <div data-filter-list="event-services" className="mt-4 hidden overflow-x-auto md:block">
+                            <table className="min-w-full border-collapse">
+                                <thead>
+                                    <tr className="border-b text-left">
+                                        <th className="py-2 px-2">Název</th>
+                                        <th className="py-2 px-2">Role</th>
+                                        <th className="py-2 px-2">Popis práce</th>
+                                        <th className="py-2 px-2 text-right">Moje odměna</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {visibleServiceItems.flatMap((item) =>
+                                        item.assignments.map((assignment) => {
+                                            const filterText = [
+                                                item.customName,
+                                                mapAssignmentRoleToLabel(assignment.role),
+                                                assignment.workDescription,
+                                                assignment.reward.toString(),
+                                            ]
+                                                .filter(Boolean)
+                                                .join(' ')
+
+                                            return (
+                                                <tr
+                                                    key={`${item.id}-${assignment.id}`}
+                                                    data-filter-item
+                                                    data-filter-text={filterText}
+                                                    className="border-b"
+                                                >
+                                                    <td className="break-words py-2 px-2 font-medium">
+                                                        {item.customName}
+                                                    </td>
+                                                    <td className="py-2 px-2">
+                                                        {mapAssignmentRoleToLabel(assignment.role)}
+                                                    </td>
+                                                    <td className="whitespace-pre-wrap break-words py-2 px-2">
+                                                        {assignment.workDescription ?? '—'}
+                                                    </td>
+                                                    <td className="whitespace-nowrap py-2 px-2 text-right font-semibold">
+                                                        {formatPrice(assignment.reward.toString())}
+                                                    </td>
+                                                </tr>
+                                            )
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 ) : (
                     <>
                         <ClientSideListFilter
@@ -251,7 +397,7 @@ export default async function EventDetailPage({
                         </p>
 
                         <div data-filter-list="event-services" className="mt-4 grid gap-4 md:hidden">
-                            {event.serviceItems.map((item) => {
+                            {visibleServiceItems.map((item) => {
                                 const deleteServiceItem = deleteEventServiceItemAction.bind(null, {
                                     eventId: event.id,
                                     serviceItemId: item.id,
@@ -414,7 +560,7 @@ export default async function EventDetailPage({
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {event.serviceItems.map((item) => {
+                                    {visibleServiceItems.map((item) => {
                                         const deleteServiceItem = deleteEventServiceItemAction.bind(null, {
                                             eventId: event.id,
                                             serviceItemId: item.id,
@@ -596,6 +742,7 @@ export default async function EventDetailPage({
                 )}
             </section>
 
+            {finance ? (
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -780,6 +927,7 @@ export default async function EventDetailPage({
                     </>
                 )}
             </section>
+            ) : null}
         </main>
     )
 }

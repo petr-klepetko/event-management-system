@@ -3,7 +3,7 @@ import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { getServiceCatalogItemById } from '@/modules/services/service-catalog.service'
 import { updateServiceCatalogItemAction } from '../../actions'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type EditServiceCatalogItemPageProps = {
     params: Promise<{
@@ -20,7 +20,7 @@ export default async function EditServiceCatalogItemPage({
 }: EditServiceCatalogItemPageProps) {
     const { id } = await params
     const { error } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
     const service = await getServiceCatalogItemById(id, auth)
 
     if (!service) {

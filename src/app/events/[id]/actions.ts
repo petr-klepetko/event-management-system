@@ -1,10 +1,10 @@
-'use server'
+﻿'use server'
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createEventServiceItem, deleteEventServiceItem } from '@/modules/event-services/event-service.service'
 import { createEventCost, deleteEventCost } from '@/modules/event-costs/event-cost.service'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 import { readEventServiceAssignments } from './service-assignment-form'
 
 type CreateEventServiceItemActionArgs = {
@@ -29,10 +29,10 @@ export async function createEventServiceItemAction(
     args: CreateEventServiceItemActionArgs,
     formData: FormData
 ) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
 
     try {
-        const auth = await requireAuthContext()
         const serviceCatalogItemId = String(formData.get('serviceCatalogItemId') ?? '').trim()
         const customName = String(formData.get('customName') ?? '').trim()
         const description = String(formData.get('description') ?? '').trim()
@@ -85,10 +85,10 @@ export async function createEventServiceItemAction(
 export async function deleteEventServiceItemAction(
     args: DeleteEventServiceItemActionArgs
 ) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
 
     try {
-        const auth = await requireAuthContext()
         await deleteEventServiceItem(args.serviceItemId, auth)
 
         revalidatePath(`/events/${args.eventId}`)
@@ -107,15 +107,14 @@ export async function deleteEventServiceItemAction(
 
     redirect(`/events/${args.eventId}`)
 }
-
 export async function createEventCostAction(
     args: CreateEventCostActionArgs,
     formData: FormData
 ) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
 
     try {
-        const auth = await requireAuthContext()
         const name = String(formData.get('costName') ?? '').trim()
         const amount = String(formData.get('costAmount') ?? '').trim()
         const note = String(formData.get('costNote') ?? '').trim()
@@ -162,10 +161,10 @@ export async function createEventCostAction(
 }
 
 export async function deleteEventCostAction(args: DeleteEventCostActionArgs) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
 
     try {
-        const auth = await requireAuthContext()
         await deleteEventCost(args.costId, auth)
 
         revalidatePath(`/events/${args.eventId}`)

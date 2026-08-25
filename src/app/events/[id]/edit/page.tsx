@@ -10,7 +10,7 @@ import {
 import { getEventById, getEventFormOptions } from '@/modules/events/event.service'
 import { eventStatusOptions } from '@/modules/events/event.utils'
 import { updateEventAction } from '../../actions'
-import { canManageOwnedTenantData, requireAuthContext } from '@/lib/auth/current-user'
+import { canManageOwnedTenantData, requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type EditEventPageProps = {
     params: Promise<{
@@ -34,7 +34,7 @@ export default async function EditEventPage({
 }: EditEventPageProps) {
     const { id } = await params
     const { error } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
 
     const [event, formOptions] = await Promise.all([
         getEventById(id, auth),

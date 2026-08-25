@@ -14,7 +14,7 @@ import {
 } from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type ClientDetailPageProps = {
     params: Promise<{
@@ -32,7 +32,7 @@ export default async function ClientDetailPage({
 }: ClientDetailPageProps) {
     const { id } = await params
     const { error, success } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
 
     const client = await getClientById(id, auth)
 

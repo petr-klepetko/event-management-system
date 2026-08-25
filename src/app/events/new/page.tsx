@@ -1,10 +1,10 @@
-import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+﻿import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import ClientCombobox from '@/components/forms/ClientCombobox'
 import SearchableSelect from '@/components/forms/SearchableSelect'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { getEventFormOptions } from '@/modules/events/event.service'
 import { createEventAction } from '../actions'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type NewEventPageProps = {
     searchParams: Promise<{
@@ -17,7 +17,7 @@ export default async function NewEventPage({
     searchParams,
 }: NewEventPageProps) {
     const { clientId, error } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
     const formOptions = await getEventFormOptions(auth)
 
     return (

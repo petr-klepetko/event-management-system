@@ -67,6 +67,20 @@ export async function requireAdminContext() {
     return auth
 }
 
+export async function requireTenantManagerContext() {
+    const auth = await requireAuthContext()
+
+    if (!auth.isAdmin && auth.tenantRole === 'WORKER') {
+        redirect('/')
+    }
+
+    return auth
+}
+
+export function isWorkerContext(auth: AuthContext) {
+    return !auth.isAdmin && auth.tenantRole === 'WORKER'
+}
+
 export function getTenantScopedWhere(auth: AuthContext) {
     if (auth.isAdmin) {
         return {}
@@ -104,22 +118,15 @@ export function getEventScopedWhere(auth: AuthContext): Prisma.EventWhereInput {
     if (auth.tenantRole === 'WORKER') {
         return {
             tenantId: auth.tenantId,
-            OR: [
-                {
-                    ownerUserId: auth.userId,
-                },
-                {
-                    serviceItems: {
+            serviceItems: {
+                some: {
+                    assignments: {
                         some: {
-                            assignments: {
-                                some: {
-                                    userId: auth.userId,
-                                },
-                            },
+                            userId: auth.userId,
                         },
                     },
                 },
-            ],
+            },
         }
     }
 

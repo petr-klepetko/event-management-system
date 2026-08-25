@@ -89,6 +89,15 @@ Domain decisions:
 - Do not use quantity or unit price for event services. Each service has one final price for the event.
 - After adding a service from the catalog, the event item is prefilled but independently editable. Later catalog changes must not mutate historical event items.
 
+## Access Rules
+
+- Workers must not see top-level clients, service catalog, finance, users, or admin sections.
+- Workers can access only events where they are assigned to at least one event service item.
+- Workers are read-only. They must not create, edit, delete, activate, deactivate, or invite anything.
+- Workers must not see client billing prices, total costs, margins, profits, or manual event costs.
+- Workers can see only their own event service assignments and their own reward.
+- Manager users can manage data inside their tenant. Application admins can see and manage all tenants.
+
 ## UI Conventions
 
 - Reuse shared Tailwind class helpers from `src/lib/ui/styles.ts`.

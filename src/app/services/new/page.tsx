@@ -1,6 +1,7 @@
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { createServiceCatalogItemAction } from '../actions'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type NewServiceCatalogItemPageProps = {
     searchParams: Promise<{
@@ -11,6 +12,7 @@ type NewServiceCatalogItemPageProps = {
 export default async function NewServiceCatalogItemPage({
     searchParams,
 }: NewServiceCatalogItemPageProps) {
+    await requireTenantManagerContext()
     const { error } = await searchParams
 
     return (

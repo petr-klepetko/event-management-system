@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import { getEventFinanceRows } from '@/modules/events/event.service'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,7 +53,7 @@ function groupRowsByYear(rows: Awaited<ReturnType<typeof getEventFinanceRows>>) 
 }
 
 export default async function FinancePage() {
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
     const rows = await getEventFinanceRows(auth)
     const yearGroups = groupRowsByYear(rows)
 

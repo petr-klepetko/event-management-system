@@ -13,7 +13,7 @@ type CalendarEvent = {
     status: EventStatus
     dateStart: string
     venueName: string | null
-    client: {
+    client?: {
         name: string
     }
     primaryContact: {
@@ -326,12 +326,14 @@ export default function EventsMonthCalendar({ events }: EventsMonthCalendarProps
                                                             </dt>
                                                             <dd>{formatTime(dateStart)}</dd>
                                                         </div>
-                                                        <div>
-                                                            <dt className="text-gray-500">
-                                                                Klient
-                                                            </dt>
-                                                            <dd>{event.client.name}</dd>
-                                                        </div>
+                                                        {event.client ? (
+                                                            <div>
+                                                                <dt className="text-gray-500">
+                                                                    Klient
+                                                                </dt>
+                                                                <dd>{event.client.name}</dd>
+                                                            </div>
+                                                        ) : null}
                                                         <div>
                                                             <dt className="text-gray-500">
                                                                 Kontakt

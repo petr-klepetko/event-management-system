@@ -1,13 +1,14 @@
 import Link from 'next/link'
 import { getClientsCount } from '@/modules/clients/client.service'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { isWorkerContext, requireAuthContext } from '@/lib/auth/current-user'
 
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
   const auth = await requireAuthContext()
-  const clientsCount = await getClientsCount(auth)
+  const isWorker = isWorkerContext(auth)
+  const clientsCount = isWorker ? null : await getClientsCount(auth)
 
   return (
     <main className="mx-auto max-w-5xl p-8">
@@ -24,51 +25,59 @@ export default async function HomePage() {
         <h2 className="text-xl font-semibold">Rychlý přístup</h2>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-4">
-          <Link
-            href="/clients"
-            className="rounded-md border p-4 transition-colors"
-          >
-            <span className="block font-semibold">Klienti</span>
-            <span className="mt-2 block text-sm text-gray-600">
-              Evidence klientů a kontaktních osob.
-            </span>
-          </Link>
+          {!isWorker ? (
+            <Link
+              href="/clients"
+              className="rounded-md border p-4 transition-colors"
+            >
+              <span className="block font-semibold">Klienti</span>
+              <span className="mt-2 block text-sm text-gray-600">
+                Evidence klientů a kontaktních osob.
+              </span>
+            </Link>
+          ) : null}
           <Link
             href="/events"
             className="rounded-md border p-4 transition-colors"
           >
             <span className="block font-semibold">Akce</span>
             <span className="mt-2 block text-sm text-gray-600">
-              Přehled akcí a služeb na konkrétní akci.
+              {isWorker
+                ? 'Akce, na kterých máš přiřazenou práci.'
+                : 'Přehled akcí a služeb na konkrétní akci.'}
             </span>
           </Link>
-          <Link
-            href="/services"
-            className="rounded-md border p-4 transition-colors"
-          >
-            <span className="block font-semibold">Služby</span>
-            <span className="mt-2 block text-sm text-gray-600">
-              Katalog šablon služeb a výchozích cen.
-            </span>
-          </Link>
-          <Link
-            href="/finance"
-            className="rounded-md border p-4 transition-colors"
-          >
-            <span className="block font-semibold">Finance</span>
-            <span className="mt-2 block text-sm text-gray-600">
-              Fakturační ceny, náklady a zisk podle akcí.
-            </span>
-          </Link>
-          <Link
-            href="/settings/users"
-            className="rounded-md border p-4 transition-colors"
-          >
-            <span className="block font-semibold">Uživatelé</span>
-            <span className="mt-2 block text-sm text-gray-600">
-              Pozvánky, role a členové tenantu.
-            </span>
-          </Link>
+          {!isWorker ? (
+            <>
+              <Link
+                href="/services"
+                className="rounded-md border p-4 transition-colors"
+              >
+                <span className="block font-semibold">Služby</span>
+                <span className="mt-2 block text-sm text-gray-600">
+                  Katalog šablon služeb a výchozích cen.
+                </span>
+              </Link>
+              <Link
+                href="/finance"
+                className="rounded-md border p-4 transition-colors"
+              >
+                <span className="block font-semibold">Finance</span>
+                <span className="mt-2 block text-sm text-gray-600">
+                  Fakturační ceny, náklady a zisk podle akcí.
+                </span>
+              </Link>
+              <Link
+                href="/settings/users"
+                className="rounded-md border p-4 transition-colors"
+              >
+                <span className="block font-semibold">Uživatelé</span>
+                <span className="mt-2 block text-sm text-gray-600">
+                  Pozvánky, role a členové tenantu.
+                </span>
+              </Link>
+            </>
+          ) : null}
           {auth.isAdmin ? (
             <Link
               href="/admin"
@@ -83,13 +92,15 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-xl border p-6">
-        <h2 className="text-xl font-semibold">Současný stav</h2>
-        <p className="mt-4 text-sm text-gray-600">
-          Počet klientů v databázi
-        </p>
-        <p className="mt-1 text-3xl font-bold">{clientsCount}</p>
-      </section>
+      {!isWorker ? (
+        <section className="mt-8 rounded-xl border p-6">
+          <h2 className="text-xl font-semibold">Současný stav</h2>
+          <p className="mt-4 text-sm text-gray-600">
+            Počet klientů v databázi
+          </p>
+          <p className="mt-1 text-3xl font-bold">{clientsCount}</p>
+        </section>
+      ) : null}
     </main>
   )
 }

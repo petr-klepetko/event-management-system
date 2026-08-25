@@ -7,7 +7,7 @@ import {
 import { getEventById } from '@/modules/events/event.service'
 import { createEventServiceItemAction } from '../../actions'
 import AddServiceForm from '../../AddServiceForm'
-import { canManageOwnedTenantData, requireAuthContext } from '@/lib/auth/current-user'
+import { canManageOwnedTenantData, requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type NewEventServiceItemPageProps = {
     params: Promise<{
@@ -24,7 +24,7 @@ export default async function NewEventServiceItemPage({
 }: NewEventServiceItemPageProps) {
     const { id: eventId } = await params
     const { error } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
 
     const [event, serviceCatalogItems, assignableUsers] = await Promise.all([
         getEventById(eventId, auth),

@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { revalidatePath } from 'next/cache'
 import { EventStatus } from '@prisma/client'
@@ -8,7 +8,7 @@ import {
     updateEvent,
 } from '@/modules/events/event.service'
 import { redirect } from 'next/navigation'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 function readEventFormData(formData: FormData) {
     const title = String(formData.get('title') ?? '').trim()
@@ -53,11 +53,11 @@ function readEventFormData(formData: FormData) {
 }
 
 export async function createEventAction(formData: FormData) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
     let clientId = ''
 
     try {
-        const auth = await requireAuthContext()
         clientId = String(formData.get('clientId') ?? '').trim()
         const input = readEventFormData(formData)
 
@@ -94,10 +94,10 @@ export async function updateEventAction(
     args: UpdateEventActionArgs,
     formData: FormData
 ) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
 
     try {
-        const auth = await requireAuthContext()
         const input = readEventFormData(formData)
         const statusRaw = String(formData.get('status') ?? '').trim()
         const allowedStatuses: EventStatus[] = [
@@ -140,10 +140,10 @@ type DeleteEventActionArgs = {
 }
 
 export async function deleteEventAction(args: DeleteEventActionArgs) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
 
     try {
-        const auth = await requireAuthContext()
         await deleteEvent(args.eventId, auth)
         revalidatePath('/events')
     } catch (error) {

@@ -10,7 +10,11 @@ import {
     compactSecondaryButtonClass,
     primaryButtonClass,
 } from '@/lib/ui/styles'
-import { canManageOwnedTenantData, requireAuthContext } from '@/lib/auth/current-user'
+import {
+    canManageOwnedTenantData,
+    isWorkerContext,
+    requireAuthContext,
+} from '@/lib/auth/current-user'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +29,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
     const { error, success } = await searchParams
 
     const auth = await requireAuthContext()
+    const isWorker = isWorkerContext(auth)
     const events = await getEvents(auth)
     const calendarEvents = events.map((event) => ({
         id: event.id,
@@ -33,9 +38,11 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
         status: event.status,
         dateStart: event.dateStart.toISOString(),
         venueName: event.venueName,
-        client: {
-            name: event.client.name,
-        },
+        client: isWorker
+            ? undefined
+            : {
+                  name: event.client.name,
+              },
         primaryContact: event.primaryContact
             ? {
                   firstName: event.primaryContact.firstName,
@@ -62,12 +69,14 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <h2 className="text-xl font-semibold">Seznam akcí</h2>
-                    <Link
-                        href="/events/new"
-                        className={primaryButtonClass}
-                    >
-                        Nová akce
-                    </Link>
+                    {!isWorker ? (
+                        <Link
+                            href="/events/new"
+                            className={primaryButtonClass}
+                        >
+                            Nová akce
+                        </Link>
+                    ) : null}
                 </div>
 
                 {error ? (
@@ -83,12 +92,20 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                 ) : null}
 
                 {events.length === 0 ? (
-                    <p className="mt-4 text-sm text-gray-600">Zatím nejsou vytvořené žádné akce.</p>
+                    <p className="mt-4 text-sm text-gray-600">
+                        {isWorker
+                            ? 'Nemáš přiřazené žádné akce.'
+                            : 'Zatím nejsou vytvořené žádné akce.'}
+                    </p>
                 ) : (
                     <>
                     <ClientSideListFilter
                         listId="events"
-                        placeholder="Hledat podle akce, klienta, stavu nebo místa..."
+                        placeholder={
+                            isWorker
+                                ? 'Hledat podle akce, stavu nebo místa...'
+                                : 'Hledat podle akce, klienta, stavu nebo místa...'
+                        }
                     />
 
                     <p
@@ -107,14 +124,14 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                             const canManageEvent = canManageOwnedTenantData(
                                 auth,
                                 event.ownerUserId
-                            )
+                            ) && !isWorker
                             const primaryContactName = event.primaryContact
                                 ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
                                 : ''
                             const filterText = [
                                 event.title,
                                 event.eventType,
-                                event.client.name,
+                                isWorker ? null : event.client.name,
                                 primaryContactName,
                                 mapEventStatusToLabel(event.status),
                                 event.venueName,
@@ -163,17 +180,19 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                                 }).format(event.dateStart)}
                                             </dd>
                                         </div>
-                                        <div>
-                                            <dt className="font-medium text-gray-500">Klient</dt>
-                                            <dd className="mt-1">
-                                                <Link
-                                                    href={`/clients/${event.client.id}`}
-                                                    className="underline underline-offset-4"
-                                                >
-                                                    {event.client.name}
-                                                </Link>
-                                            </dd>
-                                        </div>
+                                        {!isWorker ? (
+                                            <div>
+                                                <dt className="font-medium text-gray-500">Klient</dt>
+                                                <dd className="mt-1">
+                                                    <Link
+                                                        href={`/clients/${event.client.id}`}
+                                                        className="underline underline-offset-4"
+                                                    >
+                                                        {event.client.name}
+                                                    </Link>
+                                                </dd>
+                                            </div>
+                                        ) : null}
                                         <div>
                                             <dt className="font-medium text-gray-500">Kontakt</dt>
                                             <dd className="mt-1">
@@ -218,7 +237,9 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                     <th className="py-2 px-2">Název</th>
                                     <th className="py-2 px-2">Typ</th>
                                     <th className="py-2 px-2">Datum</th>
-                                    <th className="py-2 px-2">Klient</th>
+                                    {!isWorker ? (
+                                        <th className="py-2 px-2">Klient</th>
+                                    ) : null}
                                     <th className="py-2 px-2">Kontakt</th>
                                     <th className="py-2 px-2">Stav</th>
                                     <th className="py-2 px-2">Místo</th>
@@ -233,14 +254,14 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                     const canManageEvent = canManageOwnedTenantData(
                                         auth,
                                         event.ownerUserId
-                                    )
+                                    ) && !isWorker
                                     const primaryContactName = event.primaryContact
                                         ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
                                         : ''
                                     const filterText = [
                                         event.title,
                                         event.eventType,
-                                        event.client.name,
+                                        isWorker ? null : event.client.name,
                                         primaryContactName,
                                         mapEventStatusToLabel(event.status),
                                         event.venueName,
@@ -274,14 +295,16 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                                     timeStyle: 'short',
                                                 }).format(event.dateStart)}
                                             </td>
-                                            <td className="py-2 px-2">
-                                                <Link
-                                                    href={`/clients/${event.client.id}`}
-                                                    className="underline underline-offset-4"
-                                                >
-                                                    {event.client.name}
-                                                </Link>
-                                            </td>
+                                            {!isWorker ? (
+                                                <td className="py-2 px-2">
+                                                    <Link
+                                                        href={`/clients/${event.client.id}`}
+                                                        className="underline underline-offset-4"
+                                                    >
+                                                        {event.client.name}
+                                                    </Link>
+                                                </td>
+                                            ) : null}
                                             <td className="py-2 px-2">
                                                 {event.primaryContact
                                                     ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`

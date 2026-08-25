@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 import { getContactById } from '@/modules/clients/client.service'
 import { updateContactAction } from './actions'
 
@@ -21,7 +21,7 @@ export default async function EditContactPage({
 }: EditContactPageProps) {
     const { id: clientId, contactId } = await params
     const { error } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
     const contact = await getContactById(contactId, clientId, auth)
 
     if (!contact) {
