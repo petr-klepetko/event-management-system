@@ -1,7 +1,3 @@
-'use client'
-
-import { useState } from 'react'
-
 type OfferServiceItem = {
     id: string
     name: string
@@ -12,14 +8,14 @@ type OfferServiceItem = {
 type OfferServicesTableProps = {
     items: OfferServiceItem[]
     totalPrice: string
+    hideItemPrices: boolean
 }
 
 export default function OfferServicesTable({
     items,
     totalPrice,
+    hideItemPrices,
 }: OfferServicesTableProps) {
-    const [hideItemPrices, setHideItemPrices] = useState(false)
-
     if (items.length === 0) {
         return (
             <p className="offer-empty">
@@ -30,21 +26,12 @@ export default function OfferServicesTable({
 
     return (
         <>
-            <label className="offer-toggle print-hidden">
-                <input
-                    type="checkbox"
-                    checked={hideItemPrices}
-                    onChange={(event) => setHideItemPrices(event.target.checked)}
-                />
-                <span>Skrýt ceny jednotlivých položek</span>
-            </label>
-
             <table className="offer-table">
                 <thead>
                     <tr>
                         <th>Služba</th>
                         <th>Popis</th>
-                        {!hideItemPrices ? <th>Cena</th> : null}
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -52,7 +39,7 @@ export default function OfferServicesTable({
                         <tr key={item.id}>
                             <td>{item.name}</td>
                             <td>{item.description}</td>
-                            {!hideItemPrices ? <td>{item.price}</td> : null}
+                            {!hideItemPrices ? <td>{item.price}</td> : <td></td>}
                         </tr>
                     ))}
                 </tbody>

@@ -146,6 +146,23 @@ export default async function NewEventPage({
                         />
                     </div>
 
+                    <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <input
+                            name="hideOfferItemPrices"
+                            type="checkbox"
+                            className="mt-1"
+                        />
+                        <span>
+                            <span className="block font-medium">
+                                Skrýt ceny jednotlivých položek v nabídce
+                            </span>
+                            <span className="mt-1 block text-sm text-gray-600">
+                                V PDF nabídce zůstane vidět celková cena, ale u služeb se
+                                nezobrazí ceny po položkách.
+                            </span>
+                        </span>
+                    </label>
+
                     <button type="submit" className={buttonClass}>
                         Vytvořit akci
                     </button>

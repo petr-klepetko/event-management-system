@@ -14,6 +14,7 @@ export type CreateEventInput = {
     clientId: string
     primaryContactId?: string | null
     internalNote?: string | null
+    hideOfferItemPrices: boolean
 }
 
 export type UpdateEventInput = CreateEventInput & {
@@ -276,6 +277,7 @@ export async function createEvent(input: CreateEventInput, auth: AuthContext) {
             primaryContactId: input.primaryContactId ?? null,
             createdByUserId: auth.userId,
             internalNote: input.internalNote ?? null,
+            hideOfferItemPrices: input.hideOfferItemPrices,
         },
     })
 }
@@ -328,6 +330,7 @@ export async function updateEvent(input: UpdateEventInput, auth: AuthContext) {
             clientId: input.clientId,
             primaryContactId: input.primaryContactId ?? null,
             internalNote: input.internalNote ?? null,
+            hideOfferItemPrices: input.hideOfferItemPrices,
         },
     })
 }

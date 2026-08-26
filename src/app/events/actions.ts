@@ -18,6 +18,7 @@ function readEventFormData(formData: FormData) {
     const clientId = String(formData.get('clientId') ?? '').trim()
     const primaryContactId = String(formData.get('primaryContactId') ?? '').trim()
     const internalNote = String(formData.get('internalNote') ?? '').trim()
+    const hideOfferItemPrices = formData.get('hideOfferItemPrices') === 'on'
 
     if (!title) {
         throw new Error('Název akce je povinný.')
@@ -49,6 +50,7 @@ function readEventFormData(formData: FormData) {
         clientId,
         primaryContactId: primaryContactId || null,
         internalNote: internalNote || null,
+        hideOfferItemPrices,
     }
 }
 

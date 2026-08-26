@@ -42,3 +42,4 @@ next-env.d.ts
 
 # local generated test credentials / tenant notes
 /TEST_TENANTS.md
+/zapis_schuzka.md

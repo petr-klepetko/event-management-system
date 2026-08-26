@@ -173,6 +173,7 @@ export default async function EventOfferPage({ params }: EventOfferPageProps) {
                     <OfferServicesTable
                         items={offerServiceItems}
                         totalPrice={formatPrice(totalPrice)}
+                        hideItemPrices={event.hideOfferItemPrices}
                     />
                 </section>
 
