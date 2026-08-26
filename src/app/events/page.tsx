@@ -43,7 +43,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
             : {
                   name: event.client.name,
               },
-        primaryContact: event.primaryContact
+        primaryContact: !isWorker && event.primaryContact
             ? {
                   firstName: event.primaryContact.firstName,
                   lastName: event.primaryContact.lastName,
@@ -125,7 +125,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                 auth,
                                 event.ownerUserId
                             ) && !isWorker
-                            const primaryContactName = event.primaryContact
+                            const primaryContactName = !isWorker && event.primaryContact
                                 ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
                                 : ''
                             const filterText = [
@@ -193,14 +193,16 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                                 </dd>
                                             </div>
                                         ) : null}
-                                        <div>
-                                            <dt className="font-medium text-gray-500">Kontakt</dt>
-                                            <dd className="mt-1">
-                                                {event.primaryContact
-                                                    ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
-                                                    : '—'}
-                                            </dd>
-                                        </div>
+                                        {!isWorker ? (
+                                            <div>
+                                                <dt className="font-medium text-gray-500">Kontakt</dt>
+                                                <dd className="mt-1">
+                                                    {event.primaryContact
+                                                        ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
+                                                        : '—'}
+                                                </dd>
+                                            </div>
+                                        ) : null}
                                         <div>
                                             <dt className="font-medium text-gray-500">Místo</dt>
                                             <dd className="mt-1">{event.venueName ?? '—'}</dd>
@@ -240,7 +242,9 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                     {!isWorker ? (
                                         <th className="py-2 px-2">Klient</th>
                                     ) : null}
-                                    <th className="py-2 px-2">Kontakt</th>
+                                    {!isWorker ? (
+                                        <th className="py-2 px-2">Kontakt</th>
+                                    ) : null}
                                     <th className="py-2 px-2">Stav</th>
                                     <th className="py-2 px-2">Místo</th>
                                     <th className="py-2 px-2 whitespace-nowrap">Akce</th>
@@ -255,7 +259,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                         auth,
                                         event.ownerUserId
                                     ) && !isWorker
-                                    const primaryContactName = event.primaryContact
+                                    const primaryContactName = !isWorker && event.primaryContact
                                         ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
                                         : ''
                                     const filterText = [
@@ -305,11 +309,13 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                                     </Link>
                                                 </td>
                                             ) : null}
-                                            <td className="py-2 px-2">
-                                                {event.primaryContact
-                                                    ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
-                                                    : '—'}
-                                            </td>
+                                            {!isWorker ? (
+                                                <td className="py-2 px-2">
+                                                    {event.primaryContact
+                                                        ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
+                                                        : '—'}
+                                                </td>
+                                            ) : null}
                                             <td className="py-2 px-2">
                                                 {mapEventStatusToLabel(event.status)}
                                             </td>

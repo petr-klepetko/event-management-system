@@ -6,6 +6,7 @@ import { primaryButtonClass, secondaryButtonClass } from '@/lib/ui/styles'
 import { getEventById } from '@/modules/events/event.service'
 import { mapEventStatusToLabel } from '@/modules/events/event.utils'
 import { canManageOwnedTenantData, requireTenantManagerContext } from '@/lib/auth/current-user'
+import OfferServicesTable from './OfferServicesTable'
 
 type EventOfferPageProps = {
     params: Promise<{
@@ -52,6 +53,12 @@ export default async function EventOfferPage({ params }: EventOfferPageProps) {
         (sum, item) => sum + Number(item.price.toString()),
         0
     )
+    const offerServiceItems = event.serviceItems.map((item) => ({
+        id: item.id,
+        name: item.customName,
+        description: item.description ?? '—',
+        price: formatPrice(item.price.toString()),
+    }))
 
     return (
         <main className="mx-auto max-w-5xl p-8 print-preview-page">
@@ -163,36 +170,10 @@ export default async function EventOfferPage({ params }: EventOfferPageProps) {
                 <section className="offer-section">
                     <h3>Nabízené služby</h3>
 
-                    {event.serviceItems.length === 0 ? (
-                        <p className="offer-empty">
-                            K této akci zatím nejsou přidané žádné služby.
-                        </p>
-                    ) : (
-                        <table className="offer-table">
-                            <thead>
-                                <tr>
-                                    <th>Služba</th>
-                                    <th>Popis</th>
-                                    <th>Cena</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {event.serviceItems.map((item) => (
-                                    <tr key={item.id}>
-                                        <td>{item.customName}</td>
-                                        <td>{item.description ?? '—'}</td>
-                                        <td>{formatPrice(item.price.toString())}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colSpan={2}>Celkem</td>
-                                    <td>{formatPrice(totalPrice)}</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    )}
+                    <OfferServicesTable
+                        items={offerServiceItems}
+                        totalPrice={formatPrice(totalPrice)}
+                    />
                 </section>
 
                 <footer className="offer-footer">

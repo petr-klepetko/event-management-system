@@ -68,19 +68,19 @@ export default async function EventDetailPage({
     const finance = isWorker ? null : calculateEventFinance(event)
     const visibleServiceItems = isWorker
         ? event.serviceItems.flatMap((item) => {
-              const assignments = item.assignments.filter(
-                  (assignment) => assignment.user.id === auth.userId
-              )
+            const assignments = item.assignments.filter(
+                (assignment) => assignment.user.id === auth.userId
+            )
 
-              return assignments.length > 0
-                  ? [
-                        {
-                            ...item,
-                            assignments,
-                        },
-                    ]
-                  : []
-          })
+            return assignments.length > 0
+                ? [
+                    {
+                        ...item,
+                        assignments,
+                    },
+                ]
+                : []
+        })
         : event.serviceItems
     const canManageEvent =
         !isWorker && canManageOwnedTenantData(auth, event.ownerUserId)
@@ -171,31 +171,35 @@ export default async function EventDetailPage({
                         </div>
                     ) : null}
 
-                    <div>
-                        <dt className="text-sm text-gray-500">Hlavní kontakt</dt>
-                        <dd className="mt-1">
-                            {event.primaryContact
-                                ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
-                                : '—'}
-                        </dd>
-                    </div>
+                    {!isWorker ? (
+                        <>
+                            <div>
+                                <dt className="text-sm text-gray-500">Hlavní kontakt</dt>
+                                <dd className="mt-1">
+                                    {event.primaryContact
+                                        ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
+                                        : '—'}
+                                </dd>
+                            </div>
 
-                    <div>
-                        <dt className="text-sm text-gray-500">Email kontaktu</dt>
-                        <dd className="mt-1">{event.primaryContact?.email ?? '—'}</dd>
-                    </div>
+                            <div>
+                                <dt className="text-sm text-gray-500">Email kontaktu</dt>
+                                <dd className="mt-1">{event.primaryContact?.email ?? '—'}</dd>
+                            </div>
 
-                    <div>
-                        <dt className="text-sm text-gray-500">Telefon kontaktu</dt>
-                        <dd className="mt-1">{event.primaryContact?.phone ?? '—'}</dd>
-                    </div>
+                            <div>
+                                <dt className="text-sm text-gray-500">Telefon kontaktu</dt>
+                                <dd className="mt-1">{event.primaryContact?.phone ?? '—'}</dd>
+                            </div>
 
-                    <div>
-                        <dt className="text-sm text-gray-500">Instagram kontaktu</dt>
-                        <dd className="mt-1">
-                            {event.primaryContact?.instagram ?? '—'}
-                        </dd>
-                    </div>
+                            <div>
+                                <dt className="text-sm text-gray-500">Instagram kontaktu</dt>
+                                <dd className="mt-1">
+                                    {event.primaryContact?.instagram ?? '—'}
+                                </dd>
+                            </div>
+                        </>
+                    ) : null}
                 </dl>
 
                 {!isWorker && event.internalNote ? (
@@ -207,33 +211,33 @@ export default async function EventDetailPage({
             </section>
 
             {finance ? (
-            <section className="mt-8 grid gap-3 sm:grid-cols-3 rounded-lg p-4 sm:p-6 border">
-                <div className="rounded-lg border border-slate-200 bg-white p-4">
-                    <p className="text-sm font-medium text-gray-500">
-                        Nabídnuto klientovi
-                    </p>
-                    <p className="mt-2 text-xl font-semibold">
-                        {formatPrice(finance.invoicePrice)}
-                    </p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-4">
-                    <p className="text-sm font-medium text-gray-500">
-                        Náklady celkem
-                    </p>
-                    <p className="mt-2 text-xl font-semibold">
-                        {formatPrice(finance.costs)}
-                    </p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-4">
-                    <p className="text-sm font-medium text-gray-500">Zisk</p>
-                    <p
-                        className={`mt-2 text-xl font-semibold ${finance.profit < 0 ? 'text-red-700' : 'text-teal-700'
-                            }`}
-                    >
-                        {formatPrice(finance.profit)}
-                    </p>
-                </div>
-            </section>
+                <section className="mt-8 grid gap-3 sm:grid-cols-3 rounded-lg p-4 sm:p-6 border">
+                    <div className="rounded-lg border border-slate-200 bg-white p-4">
+                        <p className="text-sm font-medium text-gray-500">
+                            Nabídnuto klientovi
+                        </p>
+                        <p className="mt-2 text-xl font-semibold">
+                            {formatPrice(finance.invoicePrice)}
+                        </p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-white p-4">
+                        <p className="text-sm font-medium text-gray-500">
+                            Náklady celkem
+                        </p>
+                        <p className="mt-2 text-xl font-semibold">
+                            {formatPrice(finance.costs)}
+                        </p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-white p-4">
+                        <p className="text-sm font-medium text-gray-500">Zisk</p>
+                        <p
+                            className={`mt-2 text-xl font-semibold ${finance.profit < 0 ? 'text-red-700' : 'text-teal-700'
+                                }`}
+                        >
+                            {formatPrice(finance.profit)}
+                        </p>
+                    </div>
+                </section>
             ) : null}
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
@@ -441,11 +445,10 @@ export default async function EventDetailPage({
                                                     Náklady: {formatPrice(itemFinance.workerCosts)}
                                                 </p>
                                                 <p
-                                                    className={`mt-1 text-sm font-medium ${
-                                                        itemFinance.margin < 0
+                                                    className={`mt-1 text-sm font-medium ${itemFinance.margin < 0
                                                             ? 'text-red-700'
                                                             : 'text-teal-700'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     Marže: {formatPrice(itemFinance.margin)}
                                                 </p>
@@ -702,11 +705,10 @@ export default async function EventDetailPage({
                                                     {formatPrice(itemFinance.workerCosts)}
                                                 </td>
                                                 <td
-                                                    className={`whitespace-nowrap py-2 px-2 text-right font-medium ${
-                                                        itemFinance.margin < 0
+                                                    className={`whitespace-nowrap py-2 px-2 text-right font-medium ${itemFinance.margin < 0
                                                             ? 'text-red-700'
                                                             : 'text-teal-700'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {formatPrice(itemFinance.margin)}
                                                 </td>
@@ -743,190 +745,190 @@ export default async function EventDetailPage({
             </section>
 
             {finance ? (
-            <section className="mt-8 rounded-xl border p-4 sm:p-6">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h2 className="text-xl font-semibold">Náklady</h2>
-                        <p className="mt-1 text-sm text-gray-600">
-                            Ruční výdaje akce mimo odměny pracovníků.
-                        </p>
+                <section className="mt-8 rounded-xl border p-4 sm:p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h2 className="text-xl font-semibold">Náklady</h2>
+                            <p className="mt-1 text-sm text-gray-600">
+                                Ruční výdaje akce mimo odměny pracovníků.
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                {success === 'NakladBylPridan' ? (
-                    <p className="mt-4 rounded-md border border-green-500/40 px-4 py-3 text-sm text-green-300">
-                        Náklad byl přidán.
-                    </p>
-                ) : null}
+                    {success === 'NakladBylPridan' ? (
+                        <p className="mt-4 rounded-md border border-green-500/40 px-4 py-3 text-sm text-green-300">
+                            Náklad byl přidán.
+                        </p>
+                    ) : null}
 
-                {financeError ? (
-                    <p className="mt-4 rounded-md border border-red-500/40 px-4 py-3 text-sm text-red-300">
-                        {financeError}
-                    </p>
-                ) : null}
+                    {financeError ? (
+                        <p className="mt-4 rounded-md border border-red-500/40 px-4 py-3 text-sm text-red-300">
+                            {financeError}
+                        </p>
+                    ) : null}
 
-                {canManageEvent ? (
-                    <form
-                        action={createCost}
-                        className="mt-6 grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 md:grid-cols-[minmax(0,1fr)_14rem] lg:grid-cols-[minmax(0,1fr)_14rem_auto]"
-                    >
-                        <div className="grid gap-2">
-                            <label htmlFor="costName" className="text-sm font-medium">
-                                Název nákladu
-                            </label>
-                            <input
-                                id="costName"
-                                name="costName"
-                                required
-                                className={inputClass}
-                                placeholder="Např. doprava"
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <label htmlFor="costAmount" className="text-sm font-medium">
-                                Částka
-                            </label>
-                            <input
-                                id="costAmount"
-                                name="costAmount"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                required
-                                className={`${inputClass} text-right`}
-                                placeholder="0"
-                            />
-                        </div>
-                        <div className="grid gap-2 md:col-span-2 lg:col-span-2">
-                            <label htmlFor="costNote" className="text-sm font-medium">
-                                Poznámka
-                            </label>
-                            <textarea
-                                id="costNote"
-                                name="costNote"
-                                rows={2}
-                                className={inputClass}
-                                placeholder="Volitelná poznámka"
-                            />
-                        </div>
-                        <div className="flex items-end md:col-span-2 lg:col-span-1 lg:justify-end">
-                            <button type="submit" className={`${primaryButtonClass} w-full lg:w-fit`}>
-                                Přidat náklad
-                            </button>
-                        </div>
-                    </form>
-                ) : null}
+                    {canManageEvent ? (
+                        <form
+                            action={createCost}
+                            className="mt-6 grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 md:grid-cols-[minmax(0,1fr)_14rem] lg:grid-cols-[minmax(0,1fr)_14rem_auto]"
+                        >
+                            <div className="grid gap-2">
+                                <label htmlFor="costName" className="text-sm font-medium">
+                                    Název nákladu
+                                </label>
+                                <input
+                                    id="costName"
+                                    name="costName"
+                                    required
+                                    className={inputClass}
+                                    placeholder="Např. doprava"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <label htmlFor="costAmount" className="text-sm font-medium">
+                                    Částka
+                                </label>
+                                <input
+                                    id="costAmount"
+                                    name="costAmount"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    required
+                                    className={`${inputClass} text-right`}
+                                    placeholder="0"
+                                />
+                            </div>
+                            <div className="grid gap-2 md:col-span-2 lg:col-span-2">
+                                <label htmlFor="costNote" className="text-sm font-medium">
+                                    Poznámka
+                                </label>
+                                <textarea
+                                    id="costNote"
+                                    name="costNote"
+                                    rows={2}
+                                    className={inputClass}
+                                    placeholder="Volitelná poznámka"
+                                />
+                            </div>
+                            <div className="flex items-end md:col-span-2 lg:col-span-1 lg:justify-end">
+                                <button type="submit" className={`${primaryButtonClass} w-full lg:w-fit`}>
+                                    Přidat náklad
+                                </button>
+                            </div>
+                        </form>
+                    ) : null}
 
-                {event.costs.length === 0 ? (
-                    <p className="mt-6 text-sm text-gray-600">
-                        Zatím nejsou zadané žádné další náklady.
-                    </p>
-                ) : (
-                    <>
-                        <div className="mt-6 grid gap-3 md:hidden">
-                            {event.costs.map((cost) => {
-                                const deleteCost = deleteEventCostAction.bind(null, {
-                                    eventId: event.id,
-                                    costId: cost.id,
-                                })
+                    {event.costs.length === 0 ? (
+                        <p className="mt-6 text-sm text-gray-600">
+                            Zatím nejsou zadané žádné další náklady.
+                        </p>
+                    ) : (
+                        <>
+                            <div className="mt-6 grid gap-3 md:hidden">
+                                {event.costs.map((cost) => {
+                                    const deleteCost = deleteEventCostAction.bind(null, {
+                                        eventId: event.id,
+                                        costId: cost.id,
+                                    })
 
-                                return (
-                                    <article
-                                        key={cost.id}
-                                        className="rounded-lg border border-slate-200 bg-white p-4"
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <h3 className="font-semibold">{cost.name}</h3>
-                                                <p className="mt-1 font-medium">
-                                                    {formatPrice(cost.amount.toString())}
-                                                </p>
-                                            </div>
-                                            {canManageEvent ? (
-                                                <form action={deleteCost}>
-                                                    <ConfirmSubmitButton
-                                                        confirmMessage="Opravdu chceš smazat tento náklad?"
-                                                        className={compactSecondaryButtonClass}
-                                                    >
-                                                        Smazat
-                                                    </ConfirmSubmitButton>
-                                                </form>
-                                            ) : null}
-                                        </div>
-                                        <p className="mt-3 whitespace-pre-wrap text-sm text-gray-600">
-                                            {cost.note ?? '—'}
-                                        </p>
-                                    </article>
-                                )
-                            })}
-                        </div>
-
-                        <div className="mt-6 hidden overflow-hidden rounded-lg border border-slate-200 md:block">
-                            <table className="w-full table-fixed border-collapse">
-                                <thead>
-                                    <tr className="border-b bg-slate-50 text-left">
-                                        <th className="w-[30%] py-2 px-2">Název</th>
-                                        <th className="w-[18%] py-2 px-2 text-right">
-                                            Částka
-                                        </th>
-                                        <th className="w-[34%] py-2 px-2">Poznámka</th>
-                                        <th className="w-[18%] py-2 px-2">Akce</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {event.costs.map((cost) => {
-                                        const deleteCost = deleteEventCostAction.bind(null, {
-                                            eventId: event.id,
-                                            costId: cost.id,
-                                        })
-
-                                        return (
-                                            <tr key={cost.id} className="border-b">
-                                                <td className="break-words py-2 px-2">
-                                                    {cost.name}
-                                                </td>
-                                                <td className="whitespace-nowrap py-2 px-2 text-right">
-                                                    {formatPrice(cost.amount.toString())}
-                                                </td>
-                                                <td className="whitespace-pre-wrap break-words py-2 px-2">
-                                                    {cost.note ?? '—'}
-                                                </td>
-                                                <td className="py-2 px-2">
-                                                    {canManageEvent ? (
-                                                        <form action={deleteCost}>
-                                                            <ConfirmSubmitButton
-                                                                confirmMessage="Opravdu chceš smazat tento náklad?"
-                                                                className={compactSecondaryButtonClass}
-                                                            >
-                                                                Smazat
-                                                            </ConfirmSubmitButton>
-                                                        </form>
-                                                    ) : (
-                                                        '—'
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                                <tfoot>
-                                    <tr className="bg-slate-50">
-                                        <td
-                                            colSpan={3}
-                                            className="py-3 px-2 font-semibold"
+                                    return (
+                                        <article
+                                            key={cost.id}
+                                            className="rounded-lg border border-slate-200 bg-white p-4"
                                         >
-                                            Celkem další náklady
-                                        </td>
-                                        <td className="whitespace-nowrap py-3 px-2 text-right font-semibold">
-                                            {formatPrice(finance.eventCosts)}
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </>
-                )}
-            </section>
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div>
+                                                    <h3 className="font-semibold">{cost.name}</h3>
+                                                    <p className="mt-1 font-medium">
+                                                        {formatPrice(cost.amount.toString())}
+                                                    </p>
+                                                </div>
+                                                {canManageEvent ? (
+                                                    <form action={deleteCost}>
+                                                        <ConfirmSubmitButton
+                                                            confirmMessage="Opravdu chceš smazat tento náklad?"
+                                                            className={compactSecondaryButtonClass}
+                                                        >
+                                                            Smazat
+                                                        </ConfirmSubmitButton>
+                                                    </form>
+                                                ) : null}
+                                            </div>
+                                            <p className="mt-3 whitespace-pre-wrap text-sm text-gray-600">
+                                                {cost.note ?? '—'}
+                                            </p>
+                                        </article>
+                                    )
+                                })}
+                            </div>
+
+                            <div className="mt-6 hidden overflow-hidden rounded-lg border border-slate-200 md:block">
+                                <table className="w-full table-fixed border-collapse">
+                                    <thead>
+                                        <tr className="border-b bg-slate-50 text-left">
+                                            <th className="w-[30%] py-2 px-2">Název</th>
+                                            <th className="w-[18%] py-2 px-2 text-right">
+                                                Částka
+                                            </th>
+                                            <th className="w-[34%] py-2 px-2">Poznámka</th>
+                                            <th className="w-[18%] py-2 px-2">Akce</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {event.costs.map((cost) => {
+                                            const deleteCost = deleteEventCostAction.bind(null, {
+                                                eventId: event.id,
+                                                costId: cost.id,
+                                            })
+
+                                            return (
+                                                <tr key={cost.id} className="border-b">
+                                                    <td className="break-words py-2 px-2">
+                                                        {cost.name}
+                                                    </td>
+                                                    <td className="whitespace-nowrap py-2 px-2 text-right">
+                                                        {formatPrice(cost.amount.toString())}
+                                                    </td>
+                                                    <td className="whitespace-pre-wrap break-words py-2 px-2">
+                                                        {cost.note ?? '—'}
+                                                    </td>
+                                                    <td className="py-2 px-2">
+                                                        {canManageEvent ? (
+                                                            <form action={deleteCost}>
+                                                                <ConfirmSubmitButton
+                                                                    confirmMessage="Opravdu chceš smazat tento náklad?"
+                                                                    className={compactSecondaryButtonClass}
+                                                                >
+                                                                    Smazat
+                                                                </ConfirmSubmitButton>
+                                                            </form>
+                                                        ) : (
+                                                            '—'
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            )
+                                        })}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="bg-slate-50">
+                                            <td
+                                                colSpan={3}
+                                                className="py-3 px-2 font-semibold"
+                                            >
+                                                Celkem další náklady
+                                            </td>
+                                            <td className="whitespace-nowrap py-3 px-2 text-right font-semibold">
+                                                {formatPrice(finance.eventCosts)}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </>
+                    )}
+                </section>
             ) : null}
         </main>
     )

@@ -384,6 +384,25 @@ button[type='submit'] {
   margin: 0;
 }
 
+.offer-toggle {
+  align-items: center;
+  color: #344054;
+  display: inline-flex;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+  user-select: none;
+}
+
+.offer-toggle input {
+  height: 1rem;
+  width: 1rem;
+}
+
+.offer-toggle span {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .offer-footer {
   color: var(--muted);
   font-size: 0.9rem;

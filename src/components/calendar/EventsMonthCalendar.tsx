@@ -295,10 +295,6 @@ export default function EventsMonthCalendar({ events }: EventsMonthCalendarProps
                                 <div className="grid min-w-0 gap-1">
                                     {dayEvents.map((event) => {
                                         const dateStart = parseEventDate(event)
-                                        const contact = event.primaryContact
-                                            ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
-                                            : '—'
-
                                         return (
                                             <div
                                                 key={event.id}
@@ -334,12 +330,16 @@ export default function EventsMonthCalendar({ events }: EventsMonthCalendarProps
                                                                 <dd>{event.client.name}</dd>
                                                             </div>
                                                         ) : null}
-                                                        <div>
-                                                            <dt className="text-gray-500">
-                                                                Kontakt
-                                                            </dt>
-                                                            <dd>{contact}</dd>
-                                                        </div>
+                                                        {event.primaryContact ? (
+                                                            <div>
+                                                                <dt className="text-gray-500">
+                                                                    Kontakt
+                                                                </dt>
+                                                                <dd>
+                                                                    {`${event.primaryContact.firstName} ${event.primaryContact.lastName}`}
+                                                                </dd>
+                                                            </div>
+                                                        ) : null}
                                                         <div>
                                                             <dt className="text-gray-500">
                                                                 Stav
