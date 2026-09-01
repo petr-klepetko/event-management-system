@@ -1,6 +1,5 @@
-﻿import Breadcrumbs from '@/components/navigation/Breadcrumbs'
-import ClientCombobox from '@/components/forms/ClientCombobox'
-import SearchableSelect from '@/components/forms/SearchableSelect'
+import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import EventClientFields from '@/components/forms/EventClientFields'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { getEventFormOptions } from '@/modules/events/event.service'
 import { createEventAction } from '../actions'
@@ -100,38 +99,12 @@ export default async function NewEventPage({
                         />
                     </div>
 
-                    <div className="grid gap-2 sm:grid-cols-2">
-                        <div className="grid gap-2">
-                            <label htmlFor="clientId" className="font-medium">
-                                Klient
-                            </label>
-                            <ClientCombobox
-                                clients={formOptions.clients}
-                                defaultClientId={clientId}
-                                required
-                            />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <label
-                                htmlFor="primaryContactId"
-                                className="font-medium"
-                            >
-                                Hlavní kontakt
-                            </label>
-                            <SearchableSelect
-                                id="primaryContactId"
-                                name="primaryContactId"
-                                placeholder="Začni psát jméno kontaktu nebo klienta..."
-                                emptyOptionLabel="Bez vybraného kontaktu"
-                                options={formOptions.contacts.map((contact) => ({
-                                    value: contact.id,
-                                    label: `${contact.firstName} ${contact.lastName} (${contact.client.name})`,
-                                    searchText: `${contact.firstName} ${contact.lastName} ${contact.instagram ?? ''} ${contact.client.name}`,
-                                }))}
-                            />
-                        </div>
-                    </div>
+                    <EventClientFields
+                        clients={formOptions.clients}
+                        contacts={formOptions.contacts}
+                        defaultClientMode="REGULAR"
+                        defaultClientId={clientId}
+                    />
 
                     <div className="grid gap-2">
                         <label htmlFor="internalNote" className="font-medium">

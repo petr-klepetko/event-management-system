@@ -179,6 +179,7 @@ export default async function EditEventServiceItemPage({
                             (assignment) => ({
                                 id: assignment.id,
                                 userId: assignment.userId,
+                                supplierName: assignment.supplierName,
                                 role: assignment.role,
                                 workDescription: assignment.workDescription,
                                 reward: assignment.reward.toString(),

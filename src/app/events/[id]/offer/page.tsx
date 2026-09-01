@@ -36,6 +36,15 @@ function formatPrice(value: string | number) {
     }).format(amount)
 }
 
+function getOfferClientName(event: {
+    client: {
+        name: string
+    } | null
+    oneOffClientName: string | null
+}) {
+    return event.client?.name ?? event.oneOffClientName ?? '—'
+}
+
 export default async function EventOfferPage({ params }: EventOfferPageProps) {
     const { id } = await params
     const auth = await requireTenantManagerContext()
@@ -137,31 +146,44 @@ export default async function EventOfferPage({ params }: EventOfferPageProps) {
                         <dl className="offer-grid">
                             <div>
                                 <dt>Název</dt>
-                                <dd>{event.client.name}</dd>
+                                <dd>{getOfferClientName(event)}</dd>
                             </div>
-                            <div>
-                                <dt>IČO</dt>
-                                <dd>{event.client.ico ?? '—'}</dd>
-                            </div>
-                            <div>
-                                <dt>DIČ</dt>
-                                <dd>{event.client.dic ?? '—'}</dd>
-                            </div>
-                            <div>
-                                <dt>Město</dt>
-                                <dd>{event.client.city ?? '—'}</dd>
-                            </div>
-                            <div>
-                                <dt>Kontakt</dt>
-                                <dd>
-                                    {event.primaryContact
-                                        ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
-                                        : '—'}
-                                </dd>
-                            </div>
+                            {event.client ? (
+                                <>
+                                    <div>
+                                        <dt>IČO</dt>
+                                        <dd>{event.client.ico ?? '—'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>DIČ</dt>
+                                        <dd>{event.client.dic ?? '—'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Město</dt>
+                                        <dd>{event.client.city ?? '—'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Kontakt</dt>
+                                        <dd>
+                                            {event.primaryContact
+                                                ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
+                                                : '—'}
+                                        </dd>
+                                    </div>
+                                </>
+                            ) : (
+                                <div>
+                                    <dt>Telefon</dt>
+                                    <dd>{event.oneOffClientPhone ?? '—'}</dd>
+                                </div>
+                            )}
                             <div>
                                 <dt>Email</dt>
-                                <dd>{event.primaryContact?.email ?? '—'}</dd>
+                                <dd>
+                                    {event.client
+                                        ? event.primaryContact?.email ?? '—'
+                                        : event.oneOffClientEmail ?? '—'}
+                                </dd>
                             </div>
                         </dl>
                     </section>

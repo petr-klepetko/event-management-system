@@ -50,6 +50,24 @@ function mapAssignmentRoleToLabel(role: 'RESPONSIBLE' | 'WORKER') {
     return role === 'RESPONSIBLE' ? 'Má na starost' : 'Pracovník'
 }
 
+function getAssignmentDisplayName(assignment: {
+    supplierName: string | null
+    user: {
+        fullName: string
+    } | null
+}) {
+    return assignment.user?.fullName ?? assignment.supplierName ?? 'Externí dodavatel'
+}
+
+function getEventClientName(event: {
+    client: {
+        name: string
+    } | null
+    oneOffClientName: string | null
+}) {
+    return event.client?.name ?? event.oneOffClientName ?? '—'
+}
+
 export default async function EventDetailPage({
     params,
     searchParams,
@@ -68,9 +86,9 @@ export default async function EventDetailPage({
     const finance = isWorker ? null : calculateEventFinance(event)
     const visibleServiceItems = isWorker
         ? event.serviceItems.flatMap((item) => {
-            const assignments = item.assignments.filter(
-                (assignment) => assignment.user.id === auth.userId
-            )
+              const assignments = item.assignments.filter(
+                  (assignment) => assignment.user?.id === auth.userId
+              )
 
             return assignments.length > 0
                 ? [
@@ -161,17 +179,21 @@ export default async function EventDetailPage({
                         <div>
                             <dt className="text-sm text-gray-500">Klient</dt>
                             <dd className="mt-1">
-                                <Link
-                                    href={`/clients/${event.client.id}`}
-                                    className="underline underline-offset-4"
-                                >
-                                    {event.client.name}
-                                </Link>
+                                {event.client ? (
+                                    <Link
+                                        href={`/clients/${event.client.id}`}
+                                        className="underline underline-offset-4"
+                                    >
+                                        {event.client.name}
+                                    </Link>
+                                ) : (
+                                    getEventClientName(event)
+                                )}
                             </dd>
                         </div>
                     ) : null}
 
-                    {!isWorker ? (
+                    {!isWorker && event.client ? (
                         <>
                             <div>
                                 <dt className="text-sm text-gray-500">Hlavní kontakt</dt>
@@ -197,6 +219,25 @@ export default async function EventDetailPage({
                                 <dd className="mt-1">
                                     {event.primaryContact?.instagram ?? '—'}
                                 </dd>
+                            </div>
+                        </>
+                    ) : null}
+
+                    {!isWorker && !event.client ? (
+                        <>
+                            <div>
+                                <dt className="text-sm text-gray-500">Typ klienta</dt>
+                                <dd className="mt-1">Jednorázová akce</dd>
+                            </div>
+
+                            <div>
+                                <dt className="text-sm text-gray-500">Telefon klienta</dt>
+                                <dd className="mt-1">{event.oneOffClientPhone ?? '—'}</dd>
+                            </div>
+
+                            <div>
+                                <dt className="text-sm text-gray-500">E-mail klienta</dt>
+                                <dd className="mt-1">{event.oneOffClientEmail ?? '—'}</dd>
                             </div>
                         </>
                     ) : null}
@@ -416,8 +457,8 @@ export default async function EventDetailPage({
                                     item.description,
                                     item.note,
                                     ...item.assignments.flatMap((assignment) => [
-                                        assignment.user.fullName,
-                                        assignment.user.email,
+                                        getAssignmentDisplayName(assignment),
+                                        assignment.user?.email,
                                         mapAssignmentRoleToLabel(assignment.role),
                                         assignment.workDescription,
                                         assignment.reward.toString(),
@@ -480,7 +521,7 @@ export default async function EventDetailPage({
                                             </div>
                                             <div>
                                                 <dt className="font-medium text-gray-500">
-                                                    Pracovníci
+                                                    Pracovníci / dodavatelé
                                                 </dt>
                                                 <dd className="mt-1">
                                                     {item.assignments.length === 0 ? (
@@ -494,11 +535,7 @@ export default async function EventDetailPage({
                                                                         className="rounded-md bg-slate-50 px-3 py-2"
                                                                     >
                                                                         <p className="font-medium">
-                                                                            {
-                                                                                assignment
-                                                                                    .user
-                                                                                    .fullName
-                                                                            }
+                                                                            {getAssignmentDisplayName(assignment)}
                                                                         </p>
                                                                         <p className="mt-1 text-sm text-gray-600">
                                                                             {mapAssignmentRoleToLabel(
@@ -555,7 +592,7 @@ export default async function EventDetailPage({
                                 <thead>
                                     <tr className="border-b text-left">
                                         <th className="w-[24%] py-2 px-2">Název</th>
-                                        <th className="w-[22%] py-2 px-2">Pracovníci</th>
+                                        <th className="w-[22%] py-2 px-2">Pracovníci / dodavatelé</th>
                                         <th className="w-[12%] py-2 px-2 text-right">Cena</th>
                                         <th className="w-[12%] py-2 px-2 text-right">Náklady</th>
                                         <th className="w-[12%] py-2 px-2 text-right">Marže</th>
@@ -578,8 +615,8 @@ export default async function EventDetailPage({
                                             item.description,
                                             item.note,
                                             ...item.assignments.flatMap((assignment) => [
-                                                assignment.user.fullName,
-                                                assignment.user.email,
+                                                getAssignmentDisplayName(assignment),
+                                                assignment.user?.email,
                                                 mapAssignmentRoleToLabel(assignment.role),
                                                 assignment.workDescription,
                                                 assignment.reward.toString(),
@@ -646,19 +683,11 @@ export default async function EventDetailPage({
                                                                         className="group relative inline-flex"
                                                                     >
                                                                         <span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-sm leading-none hover:border-teal-300 hover:bg-teal-50">
-                                                                            {
-                                                                                assignment
-                                                                                    .user
-                                                                                    .fullName
-                                                                            }
+                                                                            {getAssignmentDisplayName(assignment)}
                                                                         </span>
                                                                         <span className="pointer-events-none absolute left-0 top-full z-20 mt-1 hidden w-64 rounded-md border border-slate-200 bg-white p-3 text-xs shadow-xl group-hover:block group-focus-within:block">
                                                                             <span className="block font-semibold text-gray-900">
-                                                                                {
-                                                                                    assignment
-                                                                                        .user
-                                                                                        .fullName
-                                                                                }
+                                                                                {getAssignmentDisplayName(assignment)}
                                                                             </span>
                                                                             <span className="mt-2 grid gap-1">
                                                                                 <span>

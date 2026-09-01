@@ -196,8 +196,11 @@ model Event {
   dateStart        DateTime
   dateEnd          DateTime?
   venueName        String?
-  clientId         String
+  clientId         String?
   primaryContactId String?
+  oneOffClientName String?
+  oneOffClientPhone String?
+  oneOffClientEmail String?
   internalNote     String?
   contractNote     String?
   hideOfferItemPrices Boolean        @default(false)
@@ -207,7 +210,7 @@ model Event {
 
   tenant           Tenant         @relation(fields: [tenantId], references: [id])
   ownerUser        User?          @relation("EventOwner", fields: [ownerUserId], references: [id])
-  client           Client         @relation(fields: [clientId], references: [id])
+  client           Client?        @relation(fields: [clientId], references: [id])
   primaryContact   ContactPerson? @relation("EventPrimaryContact", fields: [primaryContactId], references: [id])
   createdByUser    User?          @relation("EventCreatedBy", fields: [createdByUserId], references: [id])
 
@@ -289,7 +292,8 @@ model EventServiceItemAssignment {
   id                 String           @id @default(cuid())
   tenantId           String
   eventServiceItemId String
-  userId             String
+  userId             String?
+  supplierName       String?
   role               EventServiceAssignmentRole @default(WORKER)
   workDescription    String?
   reward             Decimal          @db.Decimal(10, 2)
@@ -298,7 +302,7 @@ model EventServiceItemAssignment {
 
   tenant             Tenant           @relation(fields: [tenantId], references: [id])
   eventServiceItem   EventServiceItem @relation(fields: [eventServiceItemId], references: [id], onDelete: Cascade)
-  user               User             @relation(fields: [userId], references: [id])
+  user               User?            @relation(fields: [userId], references: [id])
 
   @@unique([eventServiceItemId, userId])
   @@index([tenantId])

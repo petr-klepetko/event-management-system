@@ -18,6 +18,15 @@ import {
 
 export const dynamic = 'force-dynamic'
 
+function getEventClientName(event: {
+    client: {
+        name: string
+    } | null
+    oneOffClientName: string | null
+}) {
+    return event.client?.name ?? event.oneOffClientName ?? '—'
+}
+
 type EventsPageProps = {
     searchParams: Promise<{
         error?: string
@@ -41,7 +50,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
         client: isWorker
             ? undefined
             : {
-                  name: event.client.name,
+                  name: getEventClientName(event),
               },
         primaryContact: !isWorker && event.primaryContact
             ? {
@@ -131,7 +140,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                             const filterText = [
                                 event.title,
                                 event.eventType,
-                                isWorker ? null : event.client.name,
+                                isWorker ? null : getEventClientName(event),
                                 primaryContactName,
                                 mapEventStatusToLabel(event.status),
                                 event.venueName,
@@ -184,12 +193,16 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                             <div>
                                                 <dt className="font-medium text-gray-500">Klient</dt>
                                                 <dd className="mt-1">
-                                                    <Link
-                                                        href={`/clients/${event.client.id}`}
-                                                        className="underline underline-offset-4"
-                                                    >
-                                                        {event.client.name}
-                                                    </Link>
+                                                    {event.client ? (
+                                                        <Link
+                                                            href={`/clients/${event.client.id}`}
+                                                            className="underline underline-offset-4"
+                                                        >
+                                                            {event.client.name}
+                                                        </Link>
+                                                    ) : (
+                                                        getEventClientName(event)
+                                                    )}
                                                 </dd>
                                             </div>
                                         ) : null}
@@ -265,7 +278,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                     const filterText = [
                                         event.title,
                                         event.eventType,
-                                        isWorker ? null : event.client.name,
+                                        isWorker ? null : getEventClientName(event),
                                         primaryContactName,
                                         mapEventStatusToLabel(event.status),
                                         event.venueName,
@@ -301,12 +314,16 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                             </td>
                                             {!isWorker ? (
                                                 <td className="py-2 px-2">
-                                                    <Link
-                                                        href={`/clients/${event.client.id}`}
-                                                        className="underline underline-offset-4"
-                                                    >
-                                                        {event.client.name}
-                                                    </Link>
+                                                    {event.client ? (
+                                                        <Link
+                                                            href={`/clients/${event.client.id}`}
+                                                            className="underline underline-offset-4"
+                                                        >
+                                                            {event.client.name}
+                                                        </Link>
+                                                    ) : (
+                                                        getEventClientName(event)
+                                                    )}
                                                 </td>
                                             ) : null}
                                             {!isWorker ? (

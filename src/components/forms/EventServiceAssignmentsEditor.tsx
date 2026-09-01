@@ -12,7 +12,9 @@ type AssignableUser = {
 
 type AssignmentValue = {
     rowId: string
+    type: 'INTERNAL' | 'EXTERNAL'
     userId: string
+    supplierName: string
     role: 'RESPONSIBLE' | 'WORKER'
     workDescription: string
     reward: string
@@ -22,7 +24,8 @@ type EventServiceAssignmentsEditorProps = {
     users: AssignableUser[]
     defaultAssignments?: Array<{
         id: string
-        userId: string
+        userId: string | null
+        supplierName: string | null
         role: 'RESPONSIBLE' | 'WORKER'
         workDescription: string | null
         reward: string
@@ -32,10 +35,12 @@ type EventServiceAssignmentsEditorProps = {
 function createEmptyAssignment(rowId: string): AssignmentValue {
     return {
         rowId,
+        type: 'INTERNAL',
         userId: '',
+        supplierName: '',
         role: 'WORKER',
         workDescription: '',
-        reward: '',
+        reward: '0',
     }
 }
 
@@ -47,10 +52,12 @@ export default function EventServiceAssignmentsEditor({
         defaultAssignments.length > 0
             ? defaultAssignments.map((assignment) => ({
                   rowId: assignment.id,
-                  userId: assignment.userId,
+                  type: assignment.userId ? 'INTERNAL' : 'EXTERNAL',
+                  userId: assignment.userId ?? '',
+                  supplierName: assignment.supplierName ?? '',
                   role: assignment.role,
                   workDescription: assignment.workDescription ?? '',
-                  reward: assignment.reward,
+                  reward: assignment.reward || '0',
               }))
             : [createEmptyAssignment('assignment-empty-0')]
     )
@@ -73,21 +80,17 @@ export default function EventServiceAssignmentsEditor({
 
     function removeAssignment(rowId: string) {
         setAssignments((currentAssignments) =>
-            currentAssignments.length === 1
-                ? [createEmptyAssignment(crypto.randomUUID())]
-                : currentAssignments.filter(
-                      (assignment) => assignment.rowId !== rowId
-                  )
+            currentAssignments.filter((assignment) => assignment.rowId !== rowId)
         )
     }
 
     return (
         <section className="grid gap-3">
             <div>
-                <h3 className="font-medium">Pracovníci na službě</h3>
+                <h3 className="font-medium">Pracovníci a dodavatelé na službě</h3>
                 <p className="mt-1 text-sm text-gray-600">
                     Ke službě můžeš přiřadit více lidí z tenantu včetně popisu práce
-                    a odměny.
+                    a odměny. Pokud nejde o interního uživatele, vyplň jen dodavatele.
                 </p>
             </div>
 
@@ -111,32 +114,94 @@ export default function EventServiceAssignmentsEditor({
                             </button>
                         </div>
 
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    updateAssignment(assignment.rowId, {
+                                        type: 'INTERNAL',
+                                        supplierName: '',
+                                    })
+                                }
+                                className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                                    assignment.type === 'INTERNAL'
+                                        ? 'btn-primary'
+                                        : 'btn-secondary'
+                                }`}
+                            >
+                                Interní pracovník
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    updateAssignment(assignment.rowId, {
+                                        type: 'EXTERNAL',
+                                        userId: '',
+                                    })
+                                }
+                                className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                                    assignment.type === 'EXTERNAL'
+                                        ? 'btn-primary'
+                                        : 'btn-secondary'
+                                }`}
+                            >
+                                Externí dodavatel
+                            </button>
+                        </div>
+
                         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_14rem]">
-                            <div className="grid gap-2">
-                                <label
-                                    htmlFor={`assignment-user-${assignment.rowId}`}
-                                    className="text-sm font-medium text-gray-500"
-                                >
-                                    Jméno pracovníka
-                                </label>
-                                <SearchableSelect
-                                    id={`assignment-user-${assignment.rowId}`}
-                                    name="assignmentUserId"
-                                    defaultValue={assignment.userId}
-                                    placeholder="Vyber pracovníka..."
-                                    emptyOptionLabel="Bez pracovníka"
-                                    options={users.map((user) => ({
-                                        value: user.id,
-                                        label: `${user.fullName} (${user.email})`,
-                                        searchText: `${user.fullName} ${user.email}`,
-                                    }))}
-                                    onValueChange={(value) =>
-                                        updateAssignment(assignment.rowId, {
-                                            userId: value,
-                                        })
-                                    }
-                                />
-                            </div>
+                            {assignment.type === 'INTERNAL' ? (
+                                <div className="grid gap-2">
+                                    <label
+                                        htmlFor={`assignment-user-${assignment.rowId}`}
+                                        className="text-sm font-medium text-gray-500"
+                                    >
+                                        Interní pracovník
+                                    </label>
+                                    <input name="assignmentSupplierName" type="hidden" value="" />
+                                    <SearchableSelect
+                                        key={`internal-${assignment.rowId}`}
+                                        id={`assignment-user-${assignment.rowId}`}
+                                        name="assignmentUserId"
+                                        defaultValue={assignment.userId}
+                                        placeholder="Vyber pracovníka..."
+                                        emptyOptionLabel="Bez pracovníka"
+                                        options={users.map((user) => ({
+                                            value: user.id,
+                                            label: `${user.fullName} (${user.email})`,
+                                            searchText: `${user.fullName} ${user.email}`,
+                                        }))}
+                                        onValueChange={(value) =>
+                                            updateAssignment(assignment.rowId, {
+                                                userId: value,
+                                            })
+                                        }
+                                    />
+                                </div>
+                            ) : (
+                                <div className="grid gap-2">
+                                    <label
+                                        htmlFor={`assignment-supplier-${assignment.rowId}`}
+                                        className="text-sm font-medium text-gray-500"
+                                    >
+                                        Externí dodavatel
+                                    </label>
+                                    <input name="assignmentUserId" type="hidden" value="" />
+                                    <input
+                                        id={`assignment-supplier-${assignment.rowId}`}
+                                        name="assignmentSupplierName"
+                                        type="text"
+                                        value={assignment.supplierName}
+                                        onChange={(event) =>
+                                            updateAssignment(assignment.rowId, {
+                                                supplierName: event.target.value,
+                                            })
+                                        }
+                                        className={inputClass}
+                                        placeholder="Např. DJ Novák"
+                                    />
+                                </div>
+                            )}
 
                             <div className="grid gap-2">
                                 <label
@@ -214,6 +279,12 @@ export default function EventServiceAssignmentsEditor({
                 ))}
             </div>
 
+            {assignments.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-gray-600">
+                    Ke službě zatím není přiřazený žádný pracovník ani dodavatel.
+                </p>
+            ) : null}
+
             <button
                 type="button"
                 onClick={() =>
@@ -224,7 +295,7 @@ export default function EventServiceAssignmentsEditor({
                 }
                 className={compactSecondaryButtonClass}
             >
-                Přidat pracovníka
+                Přidat pracovníka / dodavatele
             </button>
         </section>
     )

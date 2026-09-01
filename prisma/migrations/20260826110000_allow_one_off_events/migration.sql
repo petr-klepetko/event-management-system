@@ -1,0 +1,4 @@
+ALTER TABLE "Event" ADD COLUMN "oneOffClientName" TEXT;
+ALTER TABLE "Event" ADD COLUMN "oneOffClientPhone" TEXT;
+ALTER TABLE "Event" ADD COLUMN "oneOffClientEmail" TEXT;
+ALTER TABLE "Event" ALTER COLUMN "clientId" DROP NOT NULL;

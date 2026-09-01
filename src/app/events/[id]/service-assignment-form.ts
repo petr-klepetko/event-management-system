@@ -6,6 +6,9 @@ export function readEventServiceAssignments(
     const userIds = formData
         .getAll('assignmentUserId')
         .map((value) => String(value).trim())
+    const supplierNames = formData
+        .getAll('assignmentSupplierName')
+        .map((value) => String(value).trim())
     const roles = formData
         .getAll('assignmentRole')
         .map((value) => String(value).trim())
@@ -16,21 +19,29 @@ export function readEventServiceAssignments(
         .getAll('assignmentReward')
         .map((value) => String(value).trim())
 
-    return userIds.flatMap((userId, index) => {
+    const rowCount = Math.max(
+        userIds.length,
+        supplierNames.length,
+        roles.length,
+        workDescriptions.length,
+        rewards.length
+    )
+
+    return Array.from({ length: rowCount }).flatMap((_, index) => {
+        const userId = userIds[index] ?? ''
+        const supplierName = supplierNames[index] ?? ''
         const role = roles[index] ?? 'WORKER'
-        const reward = rewards[index] ?? ''
+        const reward = rewards[index] || '0'
         const workDescription = workDescriptions[index] ?? ''
 
-        if (!userId && !reward && !workDescription) {
+        if (!userId && !supplierName && !workDescription) {
             return []
         }
 
-        if (!userId) {
-            throw new Error('U každého řádku pracovníka vyber uživatele.')
-        }
-
-        if (!reward) {
-            throw new Error('U každého pracovníka vyplň odměnu.')
+        if (!userId && !supplierName) {
+            throw new Error(
+                'U každého řádku vyber pracovníka nebo napiš externího dodavatele.'
+            )
         }
 
         const normalizedReward = reward.replace(',', '.')
@@ -46,7 +57,8 @@ export function readEventServiceAssignments(
 
         return [
             {
-                userId,
+                userId: userId || null,
+                supplierName: supplierName || null,
                 role,
                 workDescription: workDescription || null,
                 reward: parsedReward.toFixed(2),

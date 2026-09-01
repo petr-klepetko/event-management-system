@@ -15,8 +15,15 @@ function readEventFormData(formData: FormData) {
     const eventType = String(formData.get('eventType') ?? '').trim()
     const dateStartRaw = String(formData.get('dateStart') ?? '').trim()
     const venueName = String(formData.get('venueName') ?? '').trim()
+    const clientMode =
+        String(formData.get('clientMode') ?? 'REGULAR').trim() === 'ONE_OFF'
+            ? 'ONE_OFF'
+            : 'REGULAR'
     const clientId = String(formData.get('clientId') ?? '').trim()
     const primaryContactId = String(formData.get('primaryContactId') ?? '').trim()
+    const oneOffClientName = String(formData.get('oneOffClientName') ?? '').trim()
+    const oneOffClientPhone = String(formData.get('oneOffClientPhone') ?? '').trim()
+    const oneOffClientEmail = String(formData.get('oneOffClientEmail') ?? '').trim()
     const internalNote = String(formData.get('internalNote') ?? '').trim()
     const hideOfferItemPrices = formData.get('hideOfferItemPrices') === 'on'
 
@@ -32,8 +39,12 @@ function readEventFormData(formData: FormData) {
         throw new Error('Datum akce je povinné.')
     }
 
-    if (!clientId) {
+    if (clientMode === 'REGULAR' && !clientId) {
         throw new Error('Klient je povinný.')
+    }
+
+    if (clientMode === 'ONE_OFF' && !oneOffClientName) {
+        throw new Error('U jednorázové akce vyplň název klienta.')
     }
 
     const dateStart = new Date(dateStartRaw)
@@ -47,8 +58,15 @@ function readEventFormData(formData: FormData) {
         eventType,
         dateStart,
         venueName: venueName || null,
-        clientId,
-        primaryContactId: primaryContactId || null,
+        clientId: clientMode === 'REGULAR' ? clientId : null,
+        primaryContactId:
+            clientMode === 'REGULAR' ? primaryContactId || null : null,
+        oneOffClientName:
+            clientMode === 'ONE_OFF' ? oneOffClientName || null : null,
+        oneOffClientPhone:
+            clientMode === 'ONE_OFF' ? oneOffClientPhone || null : null,
+        oneOffClientEmail:
+            clientMode === 'ONE_OFF' ? oneOffClientEmail || null : null,
         internalNote: internalNote || null,
         hideOfferItemPrices,
     }

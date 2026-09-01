@@ -11,8 +11,11 @@ export type CreateEventInput = {
     eventType: string
     dateStart: Date
     venueName?: string | null
-    clientId: string
+    clientId?: string | null
     primaryContactId?: string | null
+    oneOffClientName?: string | null
+    oneOffClientPhone?: string | null
+    oneOffClientEmail?: string | null
     internalNote?: string | null
     hideOfferItemPrices: boolean
 }
@@ -232,27 +235,43 @@ export async function getEventFormOptions(auth: AuthContext) {
 }
 
 export async function createEvent(input: CreateEventInput, auth: AuthContext) {
-    const client = await prisma.client.findUnique({
-        where: {
-            id: input.clientId,
-            ...getTenantScopedWhere(auth),
-        },
-        select: {
-            id: true,
-            tenantId: true,
-        },
-    })
+    const client = input.clientId
+        ? await prisma.client.findUnique({
+              where: {
+                  id: input.clientId,
+                  ...getTenantScopedWhere(auth),
+              },
+              select: {
+                  id: true,
+                  tenantId: true,
+              },
+          })
+        : null
 
-    if (!client) {
+    if (input.clientId && !client) {
         throw new Error('Klient neexistuje nebo k němu nemáš přístup.')
     }
 
-    if (input.primaryContactId) {
+    if (!input.clientId && !input.oneOffClientName) {
+        throw new Error('U jednorázové akce vyplň název klienta.')
+    }
+
+    if (!input.clientId && !auth.tenantId) {
+        throw new Error('Jednorázovou akci lze vytvořit jen v rámci tenantu.')
+    }
+
+    const eventTenantId = client?.tenantId ?? auth.tenantId
+
+    if (!eventTenantId) {
+        throw new Error('Akce musí patřit do tenantu.')
+    }
+
+    if (input.clientId && input.primaryContactId) {
         const contact = await prisma.contactPerson.findFirst({
             where: {
                 id: input.primaryContactId,
                 clientId: input.clientId,
-                tenantId: client.tenantId,
+                tenantId: eventTenantId,
             },
             select: {
                 id: true,
@@ -266,15 +285,18 @@ export async function createEvent(input: CreateEventInput, auth: AuthContext) {
 
     return prisma.event.create({
         data: {
-            tenantId: client.tenantId,
+            tenantId: eventTenantId,
             ownerUserId: auth.userId,
             title: input.title,
             eventType: input.eventType,
             status: EventStatus.DRAFT,
             dateStart: input.dateStart,
             venueName: input.venueName ?? null,
-            clientId: input.clientId,
-            primaryContactId: input.primaryContactId ?? null,
+            clientId: input.clientId ?? null,
+            primaryContactId: input.clientId ? input.primaryContactId ?? null : null,
+            oneOffClientName: input.clientId ? null : input.oneOffClientName ?? null,
+            oneOffClientPhone: input.clientId ? null : input.oneOffClientPhone ?? null,
+            oneOffClientEmail: input.clientId ? null : input.oneOffClientEmail ?? null,
             createdByUserId: auth.userId,
             internalNote: input.internalNote ?? null,
             hideOfferItemPrices: input.hideOfferItemPrices,
@@ -283,27 +305,49 @@ export async function createEvent(input: CreateEventInput, auth: AuthContext) {
 }
 
 export async function updateEvent(input: UpdateEventInput, auth: AuthContext) {
-    const client = await prisma.client.findUnique({
+    const existingEvent = await prisma.event.findFirst({
         where: {
-            id: input.clientId,
+            id: input.id,
             ...getTenantScopedWhere(auth),
         },
         select: {
-            id: true,
             tenantId: true,
         },
     })
 
-    if (!client) {
+    if (!existingEvent) {
+        throw new Error('Akce neexistuje nebo k ní nemáš přístup.')
+    }
+
+    const client = input.clientId
+        ? await prisma.client.findUnique({
+              where: {
+                  id: input.clientId,
+                  ...getTenantScopedWhere(auth),
+              },
+              select: {
+                  id: true,
+                  tenantId: true,
+              },
+          })
+        : null
+
+    if (input.clientId && !client) {
         throw new Error('Klient neexistuje nebo k němu nemáš přístup.')
     }
 
-    if (input.primaryContactId) {
+    if (!input.clientId && !input.oneOffClientName) {
+        throw new Error('U jednorázové akce vyplň název klienta.')
+    }
+
+    const eventTenantId = client?.tenantId ?? existingEvent.tenantId
+
+    if (input.clientId && input.primaryContactId) {
         const contact = await prisma.contactPerson.findFirst({
             where: {
                 id: input.primaryContactId,
                 clientId: input.clientId,
-                tenantId: client.tenantId,
+                tenantId: eventTenantId,
             },
             select: {
                 id: true,
@@ -321,14 +365,17 @@ export async function updateEvent(input: UpdateEventInput, auth: AuthContext) {
             ...getTenantScopedWhere(auth),
         },
         data: {
-            tenantId: client.tenantId,
+            tenantId: eventTenantId,
             title: input.title,
             eventType: input.eventType,
             status: input.status,
             dateStart: input.dateStart,
             venueName: input.venueName ?? null,
-            clientId: input.clientId,
-            primaryContactId: input.primaryContactId ?? null,
+            clientId: input.clientId ?? null,
+            primaryContactId: input.clientId ? input.primaryContactId ?? null : null,
+            oneOffClientName: input.clientId ? null : input.oneOffClientName ?? null,
+            oneOffClientPhone: input.clientId ? null : input.oneOffClientPhone ?? null,
+            oneOffClientEmail: input.clientId ? null : input.oneOffClientEmail ?? null,
             internalNote: input.internalNote ?? null,
             hideOfferItemPrices: input.hideOfferItemPrices,
         },

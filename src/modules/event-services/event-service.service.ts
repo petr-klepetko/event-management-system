@@ -22,7 +22,8 @@ export type UpdateEventServiceItemInput = {
 }
 
 export type EventServiceItemAssignmentInput = {
-  userId: string
+  userId?: string | null
+  supplierName?: string | null
   role: 'RESPONSIBLE' | 'WORKER'
   workDescription?: string | null
   reward: string
@@ -196,7 +197,17 @@ async function assertAssignableUsers(
   tenantId: string,
   assignments: EventServiceItemAssignmentInput[] = []
 ) {
-  const userIds = assignments.map((assignment) => assignment.userId)
+  for (const assignment of assignments) {
+    if (!assignment.userId && !assignment.supplierName) {
+      throw new Error(
+        'U každého řádku musí být vybraný pracovník nebo zadaný externí dodavatel.'
+      )
+    }
+  }
+
+  const userIds = assignments
+    .map((assignment) => assignment.userId)
+    .filter((userId): userId is string => Boolean(userId))
   const uniqueUserIds = new Set(userIds)
 
   if (uniqueUserIds.size !== userIds.length) {
@@ -233,7 +244,8 @@ function mapAssignmentCreateData(
   return assignments.map((assignment) => ({
     tenantId,
     eventServiceItemId,
-    userId: assignment.userId,
+    userId: assignment.userId || null,
+    supplierName: assignment.supplierName ?? null,
     role: assignment.role,
     workDescription: assignment.workDescription ?? null,
     reward: assignment.reward,
