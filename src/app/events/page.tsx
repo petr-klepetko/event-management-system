@@ -1,4 +1,5 @@
 import { deleteEventAction } from './actions'
+import { getCalendarEntries } from '@/modules/calendar-entries/calendar-entry.service'
 import { getEvents } from '@/modules/events/event.service'
 import { mapEventStatusToLabel } from '@/modules/events/event.utils'
 import Link from 'next/link'
@@ -27,6 +28,10 @@ function getEventClientName(event: {
     return event.client?.name ?? event.oneOffClientName ?? '—'
 }
 
+function mapCalendarEntryVisibilityToLabel(visibility: 'PRIVATE' | 'PUBLIC') {
+    return visibility === 'PUBLIC' ? 'Veřejná událost' : 'Soukromá událost'
+}
+
 type EventsPageProps = {
     searchParams: Promise<{
         error?: string
@@ -39,45 +44,89 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
 
     const auth = await requireAuthContext()
     const isWorker = isWorkerContext(auth)
-    const events = await getEvents(auth)
-    const calendarEvents = events.map((event) => ({
+    const [events, calendarEntries] = await Promise.all([
+        getEvents(auth),
+        getCalendarEntries(auth),
+    ])
+    const eventCalendarItems = events.map((event) => ({
         id: event.id,
+        href: `/events/${event.id}`,
+        kind: 'EVENT' as const,
         title: event.title,
-        eventType: event.eventType,
-        status: event.status,
         dateStart: event.dateStart.toISOString(),
-        venueName: event.venueName,
-        client: isWorker
-            ? undefined
-            : {
-                  name: getEventClientName(event),
-              },
-        primaryContact: !isWorker && event.primaryContact
-            ? {
-                  firstName: event.primaryContact.firstName,
-                  lastName: event.primaryContact.lastName,
-              }
-            : null,
+        eyebrow: 'Akce',
+        details: [
+            {
+                label: 'Stav',
+                value: mapEventStatusToLabel(event.status),
+            },
+            {
+                label: 'Místo',
+                value: event.venueName ?? '—',
+            },
+            ...(!isWorker
+                ? [
+                      {
+                          label: 'Klient',
+                          value: getEventClientName(event),
+                      },
+                      {
+                          label: 'Kontakt',
+                          value: event.primaryContact
+                              ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
+                              : '—',
+                      },
+                  ]
+                : []),
+        ],
     }))
+    const calendarEntryItems = calendarEntries.map((calendarEntry) => ({
+        id: calendarEntry.id,
+        href: `/calendar-entries/${calendarEntry.id}`,
+        kind: 'CALENDAR_ENTRY' as const,
+        title: calendarEntry.title,
+        dateStart: calendarEntry.dateStart.toISOString(),
+        eyebrow: mapCalendarEntryVisibilityToLabel(calendarEntry.visibility),
+        details: [
+            {
+                label: 'Autor',
+                value: calendarEntry.createdByUser.fullName,
+            },
+            {
+                label: 'Účastníci',
+                value:
+                    calendarEntry.participants.length > 0
+                        ? calendarEntry.participants
+                              .map((participant) => participant.user.fullName)
+                              .join(', ')
+                        : '—',
+            },
+            {
+                label: 'Popis',
+                value: calendarEntry.description ?? '—',
+            },
+        ],
+    }))
+    const calendarItems = [...eventCalendarItems, ...calendarEntryItems]
 
     return (
         <main className="mx-auto max-w-5xl p-4 sm:p-8">
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
-                    { label: 'Akce', href: '/events' },
+                    { label: 'Akce a události', href: '/events' },
                 ]}
             />
 
             <div>
-                <h1 className="text-3xl font-bold">Akce</h1>
+                <h1 className="text-3xl font-bold">Akce a události</h1>
             </div>
 
-            <EventsMonthCalendar events={calendarEvents} />
+            <EventsMonthCalendar items={calendarItems} />
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="text-xl font-semibold">Seznam akcí</h2>
+                    <h2 className="text-xl font-semibold">Akce</h2>
                     {!isWorker ? (
                         <Link
                             href="/events/new"
@@ -358,6 +407,231 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                                                 ) : (
                                                     '—'
                                                 )}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                    </>
+                )}
+            </section>
+
+            <section className="mt-8 rounded-xl border p-4 sm:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-xl font-semibold">Události</h2>
+                    {!isWorker ? (
+                        <Link
+                            href="/calendar-entries/new"
+                            className={primaryButtonClass}
+                        >
+                            Nová událost
+                        </Link>
+                    ) : null}
+                </div>
+
+                {calendarEntries.length === 0 ? (
+                    <p className="mt-4 text-sm text-gray-600">
+                        Zatím tu nejsou žádné viditelné události.
+                    </p>
+                ) : (
+                    <>
+                    <ClientSideListFilter
+                        listId="calendar-entries"
+                        placeholder="Hledat podle události, typu, autora nebo účastníků..."
+                    />
+
+                    <p
+                        data-filter-empty="calendar-entries"
+                        hidden
+                        className="mt-4 text-sm text-gray-600"
+                    >
+                        Žádná událost neodpovídá filtru.
+                    </p>
+
+                    <div data-filter-list="calendar-entries" className="mt-4 grid gap-4 md:hidden">
+                        {calendarEntries.map((calendarEntry) => {
+                            const participantNames = calendarEntry.participants
+                                .map((participant) => participant.user.fullName)
+                                .join(', ')
+                            const visibilityLabel = mapCalendarEntryVisibilityToLabel(
+                                calendarEntry.visibility
+                            )
+                            const filterText = [
+                                calendarEntry.title,
+                                visibilityLabel,
+                                calendarEntry.createdByUser.fullName,
+                                participantNames,
+                                calendarEntry.description,
+                                new Intl.DateTimeFormat('cs-CZ', {
+                                    dateStyle: 'medium',
+                                    timeStyle: 'short',
+                                }).format(calendarEntry.dateStart),
+                            ]
+                                .filter(Boolean)
+                                .join(' ')
+                            const canManageCalendarEntry =
+                                canManageOwnedTenantData(
+                                    auth,
+                                    calendarEntry.ownerUserId
+                                ) && !isWorker
+
+                            return (
+                                <article
+                                    key={calendarEntry.id}
+                                    data-filter-item
+                                    data-filter-text={filterText}
+                                    className="rounded-lg border border-slate-200 bg-white p-4"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <h3 className="text-base font-semibold">
+                                                <Link
+                                                    href={`/calendar-entries/${calendarEntry.id}`}
+                                                    className="underline underline-offset-4"
+                                                >
+                                                    {calendarEntry.title}
+                                                </Link>
+                                            </h3>
+                                            <p className="mt-1 text-sm text-gray-600">
+                                                {visibilityLabel}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <dl className="mt-4 grid gap-3 text-sm">
+                                        <div>
+                                            <dt className="font-medium text-gray-500">Datum</dt>
+                                            <dd className="mt-1">
+                                                {new Intl.DateTimeFormat('cs-CZ', {
+                                                    dateStyle: 'medium',
+                                                    timeStyle: 'short',
+                                                }).format(calendarEntry.dateStart)}
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt className="font-medium text-gray-500">Autor</dt>
+                                            <dd className="mt-1">
+                                                {calendarEntry.createdByUser.fullName}
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt className="font-medium text-gray-500">
+                                                Účastníci
+                                            </dt>
+                                            <dd className="mt-1">{participantNames || '—'}</dd>
+                                        </div>
+                                    </dl>
+
+                                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                                        <Link
+                                            href={`/calendar-entries/${calendarEntry.id}`}
+                                            className={compactSecondaryButtonClass}
+                                        >
+                                            Detail
+                                        </Link>
+                                        {canManageCalendarEntry ? (
+                                            <Link
+                                                href={`/calendar-entries/${calendarEntry.id}/edit`}
+                                                className={compactSecondaryButtonClass}
+                                            >
+                                                Upravit
+                                            </Link>
+                                        ) : null}
+                                    </div>
+                                </article>
+                            )
+                        })}
+                    </div>
+
+                    <div data-filter-list="calendar-entries" className="mt-4 hidden overflow-x-auto md:block">
+                        <table className="min-w-full border-collapse">
+                            <thead>
+                                <tr className="border-b text-left">
+                                    <th className="py-2 px-2">Datum</th>
+                                    <th className="py-2 px-2">Název</th>
+                                    <th className="py-2 px-2">Typ</th>
+                                    <th className="py-2 px-2">Autor</th>
+                                    <th className="py-2 px-2">Účastníci</th>
+                                    <th className="py-2 px-2 whitespace-nowrap">Akce</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {calendarEntries.map((calendarEntry) => {
+                                    const participantNames = calendarEntry.participants
+                                        .map((participant) => participant.user.fullName)
+                                        .join(', ')
+                                    const visibilityLabel =
+                                        mapCalendarEntryVisibilityToLabel(
+                                            calendarEntry.visibility
+                                        )
+                                    const filterText = [
+                                        calendarEntry.title,
+                                        visibilityLabel,
+                                        calendarEntry.createdByUser.fullName,
+                                        participantNames,
+                                        calendarEntry.description,
+                                        new Intl.DateTimeFormat('cs-CZ', {
+                                            dateStyle: 'medium',
+                                            timeStyle: 'short',
+                                        }).format(calendarEntry.dateStart),
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' ')
+                                    const canManageCalendarEntry =
+                                        canManageOwnedTenantData(
+                                            auth,
+                                            calendarEntry.ownerUserId
+                                        ) && !isWorker
+
+                                    return (
+                                        <tr
+                                            key={calendarEntry.id}
+                                            data-filter-item
+                                            data-filter-text={filterText}
+                                            className="border-b"
+                                        >
+                                            <td className="whitespace-nowrap py-2 px-2">
+                                                {new Intl.DateTimeFormat('cs-CZ', {
+                                                    dateStyle: 'medium',
+                                                    timeStyle: 'short',
+                                                }).format(calendarEntry.dateStart)}
+                                            </td>
+                                            <td className="py-2 px-2">
+                                                <Link
+                                                    href={`/calendar-entries/${calendarEntry.id}`}
+                                                    className="underline underline-offset-4"
+                                                >
+                                                    {calendarEntry.title}
+                                                </Link>
+                                            </td>
+                                            <td className="py-2 px-2">
+                                                {visibilityLabel}
+                                            </td>
+                                            <td className="py-2 px-2">
+                                                {calendarEntry.createdByUser.fullName}
+                                            </td>
+                                            <td className="py-2 px-2">
+                                                {participantNames || '—'}
+                                            </td>
+                                            <td className="py-2 px-2 whitespace-nowrap">
+                                                <div className="flex items-center gap-2">
+                                                    <Link
+                                                        href={`/calendar-entries/${calendarEntry.id}`}
+                                                        className={compactSecondaryButtonClass}
+                                                    >
+                                                        Detail
+                                                    </Link>
+                                                    {canManageCalendarEntry ? (
+                                                        <Link
+                                                            href={`/calendar-entries/${calendarEntry.id}/edit`}
+                                                            className={compactSecondaryButtonClass}
+                                                        >
+                                                            Upravit
+                                                        </Link>
+                                                    ) : null}
+                                                </div>
                                             </td>
                                         </tr>
                                     )

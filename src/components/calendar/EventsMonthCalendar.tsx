@@ -4,26 +4,21 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { inputClass } from '@/lib/ui/styles'
 
-type EventStatus = 'DRAFT' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
-
-type CalendarEvent = {
+type CalendarItem = {
     id: string
+    href: string
+    kind: 'EVENT' | 'CALENDAR_ENTRY'
     title: string
-    eventType: string
-    status: EventStatus
     dateStart: string
-    venueName: string | null
-    client?: {
-        name: string
-    }
-    primaryContact: {
-        firstName: string
-        lastName: string
-    } | null
+    eyebrow: string
+    details: Array<{
+        label: string
+        value: string
+    }>
 }
 
 type EventsMonthCalendarProps = {
-    events: CalendarEvent[]
+    items: CalendarItem[]
 }
 
 const dayLabels = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne']
@@ -42,21 +37,14 @@ const monthOptions = [
     'Prosinec',
 ]
 
-const eventStatusLabels: Record<EventStatus, string> = {
-    DRAFT: 'Rozpracováno',
-    CONFIRMED: 'Potvrzeno',
-    COMPLETED: 'Dokončeno',
-    CANCELLED: 'Zrušeno',
+function parseItemDate(item: CalendarItem) {
+    return new Date(item.dateStart)
 }
 
-function parseEventDate(event: CalendarEvent) {
-    return new Date(event.dateStart)
-}
-
-function getMonthAnchor(events: CalendarEvent[]) {
+function getMonthAnchor(items: CalendarItem[]) {
     const now = new Date()
-    const currentMonthEvents = events.filter((event) => {
-        const dateStart = parseEventDate(event)
+    const currentMonthItems = items.filter((item) => {
+        const dateStart = parseItemDate(item)
 
         return (
             dateStart.getFullYear() === now.getFullYear() &&
@@ -64,29 +52,29 @@ function getMonthAnchor(events: CalendarEvent[]) {
         )
     })
 
-    if (currentMonthEvents.length > 0) {
+    if (currentMonthItems.length > 0) {
         return new Date(now.getFullYear(), now.getMonth(), 1)
     }
 
-    const futureEvents = events
-        .filter((event) => parseEventDate(event) >= now)
+    const futureItems = items
+        .filter((item) => parseItemDate(item) >= now)
         .sort(
             (a, b) =>
-                parseEventDate(a).getTime() - parseEventDate(b).getTime()
+                parseItemDate(a).getTime() - parseItemDate(b).getTime()
         )
 
-    const fallbackEvent =
-        futureEvents[0] ??
-        [...events].sort(
+    const fallbackItem =
+        futureItems[0] ??
+        [...items].sort(
             (a, b) =>
-                parseEventDate(b).getTime() - parseEventDate(a).getTime()
+                parseItemDate(b).getTime() - parseItemDate(a).getTime()
         )[0]
 
-    if (!fallbackEvent) {
+    if (!fallbackItem) {
         return new Date(now.getFullYear(), now.getMonth(), 1)
     }
 
-    const fallbackDate = parseEventDate(fallbackEvent)
+    const fallbackDate = parseItemDate(fallbackItem)
 
     return new Date(fallbackDate.getFullYear(), fallbackDate.getMonth(), 1)
 }
@@ -145,11 +133,11 @@ function formatMonth(date: Date) {
     }).format(date)
 }
 
-function getYearOptions(events: CalendarEvent[]) {
+function getYearOptions(items: CalendarItem[]) {
     const currentYear = new Date().getFullYear()
-    const eventYears = events.map((event) => parseEventDate(event).getFullYear())
-    const minYear = Math.min(currentYear - 1, ...eventYears)
-    const maxYear = Math.max(currentYear + 2, ...eventYears)
+    const itemYears = items.map((item) => parseItemDate(item).getFullYear())
+    const minYear = Math.min(currentYear - 1, ...itemYears)
+    const maxYear = Math.max(currentYear + 2, ...itemYears)
     const years: number[] = []
 
     for (let year = minYear; year <= maxYear; year += 1) {
@@ -159,44 +147,77 @@ function getYearOptions(events: CalendarEvent[]) {
     return years
 }
 
-export default function EventsMonthCalendar({ events }: EventsMonthCalendarProps) {
-    const initialMonthAnchor = useMemo(() => getMonthAnchor(events), [events])
+function getItemLinkClass(kind: CalendarItem['kind']) {
+    if (kind === 'CALENDAR_ENTRY') {
+        return 'block min-w-0 rounded-md border border-indigo-100 bg-indigo-50 px-2 py-1 text-[0.7rem] font-medium leading-tight text-indigo-950 hover:border-indigo-300 hover:bg-indigo-100'
+    }
+
+    return 'block min-w-0 rounded-md border border-teal-100 bg-teal-50 px-2 py-1 text-[0.7rem] font-medium leading-tight text-teal-900 hover:border-teal-300 hover:bg-teal-100'
+}
+
+function getItemTimeClass(kind: CalendarItem['kind']) {
+    return kind === 'CALENDAR_ENTRY' ? 'text-indigo-700' : 'text-teal-700'
+}
+
+export default function EventsMonthCalendar({ items }: EventsMonthCalendarProps) {
+    const initialMonthAnchor = useMemo(() => getMonthAnchor(items), [items])
     const [selectedMonth, setSelectedMonth] = useState(
         initialMonthAnchor.getMonth()
     )
     const [selectedYear, setSelectedYear] = useState(
         initialMonthAnchor.getFullYear()
     )
+    const [activeTooltip, setActiveTooltip] = useState<{
+        item: CalendarItem
+        x: number
+        y: number
+    } | null>(null)
     const monthAnchor = new Date(selectedYear, selectedMonth, 1)
     const calendarDays = getCalendarDays(monthAnchor)
-    const yearOptions = getYearOptions(events)
+    const yearOptions = getYearOptions(items)
 
-    const eventsByDay = useMemo(() => {
-        const groupedEvents = new Map<string, CalendarEvent[]>()
+    const itemsByDay = useMemo(() => {
+        const groupedItems = new Map<string, CalendarItem[]>()
 
-        for (const event of events) {
-            const dayKey = formatDayKey(parseEventDate(event))
-            const dayEvents = groupedEvents.get(dayKey) ?? []
+        for (const item of items) {
+            const dayKey = formatDayKey(parseItemDate(item))
+            const dayItems = groupedItems.get(dayKey) ?? []
 
-            dayEvents.push(event)
-            groupedEvents.set(dayKey, dayEvents)
+            dayItems.push(item)
+            groupedItems.set(dayKey, dayItems)
         }
 
-        for (const dayEvents of groupedEvents.values()) {
-            dayEvents.sort(
+        for (const dayItems of groupedItems.values()) {
+            dayItems.sort(
                 (a, b) =>
-                    parseEventDate(a).getTime() - parseEventDate(b).getTime()
+                    parseItemDate(a).getTime() - parseItemDate(b).getTime()
             )
         }
 
-        return groupedEvents
-    }, [events])
+        return groupedItems
+    }, [items])
 
     function changeMonth(offset: number) {
         const nextMonth = new Date(selectedYear, selectedMonth + offset, 1)
 
         setSelectedMonth(nextMonth.getMonth())
         setSelectedYear(nextMonth.getFullYear())
+    }
+
+    function showTooltip(item: CalendarItem, element: HTMLElement) {
+        const rect = element.getBoundingClientRect()
+        const tooltipHalfWidth = 128
+        const viewportPadding = 16
+        const centeredX = rect.left + rect.width / 2
+
+        setActiveTooltip({
+            item,
+            x: Math.min(
+                Math.max(centeredX, tooltipHalfWidth + viewportPadding),
+                window.innerWidth - tooltipHalfWidth - viewportPadding
+            ),
+            y: rect.top,
+        })
     }
 
     return (
@@ -268,7 +289,7 @@ export default function EventsMonthCalendar({ events }: EventsMonthCalendarProps
 
                     {calendarDays.map((day) => {
                         const dayKey = formatDayKey(day)
-                        const dayEvents = eventsByDay.get(dayKey) ?? []
+                        const dayItems = itemsByDay.get(dayKey) ?? []
                         const isCurrentMonth =
                             day.getMonth() === monthAnchor.getMonth()
                         const isToday = dayKey === formatDayKey(new Date())
@@ -293,75 +314,40 @@ export default function EventsMonthCalendar({ events }: EventsMonthCalendarProps
                                 </div>
 
                                 <div className="grid min-w-0 gap-1">
-                                    {dayEvents.map((event) => {
-                                        const dateStart = parseEventDate(event)
+                                    {dayItems.map((item) => {
+                                        const dateStart = parseItemDate(item)
                                         return (
                                             <div
-                                                key={event.id}
-                                                className="group relative min-w-0"
+                                                key={`${item.kind}-${item.id}`}
+                                                className="min-w-0"
+                                                onMouseLeave={() => setActiveTooltip(null)}
                                             >
                                                 <Link
-                                                    href={`/events/${event.id}`}
-                                                    className="block min-w-0 rounded-md border border-teal-100 bg-teal-50 px-2 py-1 text-[0.7rem] font-medium leading-tight text-teal-900 hover:border-teal-300 hover:bg-teal-100"
+                                                    href={item.href}
+                                                    onMouseEnter={(linkEvent) =>
+                                                        showTooltip(
+                                                            item,
+                                                            linkEvent.currentTarget
+                                                        )
+                                                    }
+                                                    onFocus={(focusEvent) =>
+                                                        showTooltip(
+                                                            item,
+                                                            focusEvent.currentTarget
+                                                        )
+                                                    }
+                                                    onBlur={() => setActiveTooltip(null)}
+                                                    className={getItemLinkClass(item.kind)}
                                                 >
-                                                    <span className="block truncate text-teal-700">
+                                                    <span
+                                                        className={`block truncate ${getItemTimeClass(item.kind)}`}
+                                                    >
                                                         {formatTime(dateStart)}
                                                     </span>
                                                     <span className="block truncate">
-                                                        {event.title}
+                                                        {item.title}
                                                     </span>
                                                 </Link>
-                                                <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-64 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-md border border-slate-200 bg-white p-3 text-xs shadow-xl group-hover:block group-focus-within:block">
-                                                    <p className="font-semibold text-gray-900">
-                                                        {event.title}
-                                                    </p>
-                                                    <dl className="mt-2 grid gap-1">
-                                                        <div>
-                                                            <dt className="text-gray-500">
-                                                                Čas
-                                                            </dt>
-                                                            <dd>{formatTime(dateStart)}</dd>
-                                                        </div>
-                                                        {event.client ? (
-                                                            <div>
-                                                                <dt className="text-gray-500">
-                                                                    Klient
-                                                                </dt>
-                                                                <dd>{event.client.name}</dd>
-                                                            </div>
-                                                        ) : null}
-                                                        {event.primaryContact ? (
-                                                            <div>
-                                                                <dt className="text-gray-500">
-                                                                    Kontakt
-                                                                </dt>
-                                                                <dd>
-                                                                    {`${event.primaryContact.firstName} ${event.primaryContact.lastName}`}
-                                                                </dd>
-                                                            </div>
-                                                        ) : null}
-                                                        <div>
-                                                            <dt className="text-gray-500">
-                                                                Stav
-                                                            </dt>
-                                                            <dd>
-                                                                {
-                                                                    eventStatusLabels[
-                                                                        event.status
-                                                                    ]
-                                                                }
-                                                            </dd>
-                                                        </div>
-                                                        <div>
-                                                            <dt className="text-gray-500">
-                                                                Místo
-                                                            </dt>
-                                                            <dd>
-                                                                {event.venueName ?? '—'}
-                                                            </dd>
-                                                        </div>
-                                                    </dl>
-                                                </div>
                                             </div>
                                         )
                                     })}
@@ -371,6 +357,39 @@ export default function EventsMonthCalendar({ events }: EventsMonthCalendarProps
                     })}
                 </div>
             </div>
+
+            {activeTooltip ? (
+                <div
+                    className="pointer-events-none fixed z-50 w-64 max-w-[calc(100vw-2rem)] rounded-md border border-slate-200 bg-white p-3 text-xs shadow-xl"
+                    style={{
+                        left: activeTooltip.x,
+                        top: activeTooltip.y,
+                        transform: 'translate(-50%, calc(-100% - 0.5rem))',
+                    }}
+                >
+                    <p className="font-semibold text-gray-900">
+                        {activeTooltip.item.title}
+                    </p>
+                    <dl className="mt-2 grid gap-1">
+                        <div>
+                            <dt className="text-gray-500">Čas</dt>
+                            <dd>
+                                {formatTime(parseItemDate(activeTooltip.item))}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt className="text-gray-500">Typ</dt>
+                            <dd>{activeTooltip.item.eyebrow}</dd>
+                        </div>
+                        {activeTooltip.item.details.map((detail) => (
+                            <div key={detail.label}>
+                                <dt className="text-gray-500">{detail.label}</dt>
+                                <dd>{detail.value}</dd>
+                            </div>
+                        ))}
+                    </dl>
+                </div>
+            ) : null}
         </section>
     )
 }

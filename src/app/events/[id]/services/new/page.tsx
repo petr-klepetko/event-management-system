@@ -49,7 +49,7 @@ export default async function NewEventServiceItemPage({
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
-                    { label: 'Akce', href: '/events' },
+                    { label: 'Akce a události', href: '/events' },
                     { label: event.title, href: `/events/${event.id}` },
                     {
                         label: 'Přidat službu',

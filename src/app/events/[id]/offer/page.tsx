@@ -75,7 +75,7 @@ export default async function EventOfferPage({ params }: EventOfferPageProps) {
                 <Breadcrumbs
                     items={[
                         { label: 'Domů', href: '/' },
-                        { label: 'Akce', href: '/events' },
+                        { label: 'Akce a události', href: '/events' },
                         { label: event.title, href: `/events/${event.id}` },
                         {
                             label: 'Nabídka',

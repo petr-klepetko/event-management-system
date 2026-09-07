@@ -40,11 +40,11 @@ export default async function HomePage() {
             href="/events"
             className="rounded-md border p-4 transition-colors"
           >
-            <span className="block font-semibold">Akce</span>
+            <span className="block font-semibold">Akce a události</span>
             <span className="mt-2 block text-sm text-gray-600">
               {isWorker
-                ? 'Akce, na kterých máš přiřazenou práci.'
-                : 'Přehled akcí a služeb na konkrétní akci.'}
+                ? 'Akce a události, kterých se účastníš.'
+                : 'Přehled akcí, událostí a kalendáře.'}
             </span>
           </Link>
           {!isWorker ? (
