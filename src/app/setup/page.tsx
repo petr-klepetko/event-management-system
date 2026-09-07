@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import PersistedForm from '@/components/forms/PersistedForm'
 import { inputClass, primaryButtonClass } from '@/lib/ui/styles'
 import { canRunInitialSetup } from '@/modules/auth/setup.service'
 import { initialSetupAction } from './actions'
@@ -31,7 +32,11 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                     </p>
                 ) : null}
 
-                <form action={initialSetupAction} className="mt-6 grid gap-4">
+                <PersistedForm
+                    action={initialSetupAction}
+                    className="mt-6 grid gap-4"
+                    storageKey="initial-setup-form"
+                >
                     <div className="grid gap-2">
                         <label htmlFor="tenantName" className="font-medium">
                             Název tenantu
@@ -92,7 +97,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                     <button type="submit" className={primaryButtonClass}>
                         Dokončit nastavení
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

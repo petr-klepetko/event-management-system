@@ -6,6 +6,7 @@ import {
 } from '@/modules/event-services/event-service.service'
 import { updateEventServiceItemAction } from './actions'
 import EventServiceAssignmentsEditor from '@/components/forms/EventServiceAssignmentsEditor'
+import PersistedForm from '@/components/forms/PersistedForm'
 import SearchableSelect from '@/components/forms/SearchableSelect'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
@@ -60,13 +61,14 @@ export default async function EditEventServiceItemPage({
         eventId,
         serviceItemId,
     })
+    const formPersistenceKey = `event-service-form:edit:${serviceItemId}`
 
     return (
         <main className="mx-auto max-w-4xl p-8">
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
-                    { label: 'Akce', href: '/events' },
+                    { label: 'Akce a události', href: '/events' },
                     {
                         label: serviceItem.event.title,
                         href: `/events/${eventId}`,
@@ -94,7 +96,11 @@ export default async function EditEventServiceItemPage({
                     </p>
                 ) : null}
 
-                <form action={updateAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={updateAction}
+                    className="mt-4 grid gap-4"
+                    storageKey={formPersistenceKey}
+                >
                     <div className="grid gap-2">
                         <label htmlFor="serviceCatalogItemId" className="font-medium">
                             Služba z katalogu
@@ -175,6 +181,7 @@ export default async function EditEventServiceItemPage({
 
                     <EventServiceAssignmentsEditor
                         users={assignableUsers}
+                        persistenceKey={formPersistenceKey}
                         defaultAssignments={serviceItem.assignments.map(
                             (assignment) => ({
                                 id: assignment.id,
@@ -190,7 +197,7 @@ export default async function EditEventServiceItemPage({
                     <button type="submit" className={buttonClass}>
                         Uložit změny
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

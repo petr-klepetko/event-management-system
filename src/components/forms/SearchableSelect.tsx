@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { inputClass } from '@/lib/ui/styles'
 
 export type SearchableSelectOption = {
@@ -32,11 +32,22 @@ export default function SearchableSelect({
 }: SearchableSelectProps) {
     const generatedId = useId()
     const inputId = id ?? generatedId
-    const defaultOption =
-        options.find((option) => option.value === defaultValue) ?? null
+    const defaultOption = useMemo(
+        () => options.find((option) => option.value === defaultValue) ?? null,
+        [defaultValue, options]
+    )
     const [selectedValue, setSelectedValue] = useState(defaultOption?.value ?? '')
     const [query, setQuery] = useState(defaultOption?.label ?? '')
     const [isOpen, setIsOpen] = useState(false)
+
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            setSelectedValue(defaultOption?.value ?? '')
+            setQuery(defaultOption?.label ?? '')
+        }, 0)
+
+        return () => window.clearTimeout(timeoutId)
+    }, [defaultOption?.label, defaultOption?.value])
 
     const filteredOptions = useMemo(() => {
         const normalizedQuery = query.trim().toLowerCase()

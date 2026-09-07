@@ -1,4 +1,5 @@
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import PersistedForm from '@/components/forms/PersistedForm'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { createServiceCatalogItemAction } from '../actions'
 import { requireTenantManagerContext } from '@/lib/auth/current-user'
@@ -38,9 +39,10 @@ export default async function NewServiceCatalogItemPage({
                     </p>
                 ) : null}
 
-                <form
+                <PersistedForm
                     action={createServiceCatalogItemAction}
                     className="mt-4 grid gap-4"
+                    storageKey="catalog-service-form:new"
                 >
                     <div className="grid gap-2">
                         <label htmlFor="name" className="font-medium">
@@ -86,7 +88,7 @@ export default async function NewServiceCatalogItemPage({
                     <button type="submit" className={buttonClass}>
                         Vytvořit službu
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

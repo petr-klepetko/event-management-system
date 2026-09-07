@@ -1,3 +1,4 @@
+import PersistedForm from '@/components/forms/PersistedForm'
 import { inputClass, primaryButtonClass } from '@/lib/ui/styles'
 import { loginAction } from './actions'
 
@@ -25,7 +26,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                     </p>
                 ) : null}
 
-                <form action={loginAction} className="mt-6 grid gap-4">
+                <PersistedForm
+                    action={loginAction}
+                    className="mt-6 grid gap-4"
+                    storageKey="login-form"
+                >
                     <input type="hidden" name="next" value={next ?? '/'} />
 
                     <div className="grid gap-2">
@@ -59,7 +64,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                     <button type="submit" className={primaryButtonClass}>
                         Přihlásit
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

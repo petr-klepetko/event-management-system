@@ -1,6 +1,7 @@
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
 import ConfirmSubmitButton from '@/components/forms/ConfirmSubmitButton'
+import PersistedForm from '@/components/forms/PersistedForm'
 import {
     compactSecondaryButtonClass,
     inputClass,
@@ -72,7 +73,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Vytvořit tenant</h2>
-                <form action={createTenantAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={createTenantAction}
+                    className="mt-4 grid gap-4"
+                    storageKey="admin-tenant-form:new"
+                >
                     <div className="grid gap-2 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <label htmlFor="tenantName" className="font-medium">
@@ -102,12 +107,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <button type="submit" className={primaryButtonClass}>
                         Vytvořit tenant
                     </button>
-                </form>
+                </PersistedForm>
             </section>
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Vytvořit uživatele</h2>
-                <form action={createAdminUserAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={createAdminUserAction}
+                    className="mt-4 grid gap-4"
+                    storageKey="admin-user-form:new"
+                >
                     <div className="grid gap-2 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <label htmlFor="email" className="font-medium">
@@ -218,7 +227,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <button type="submit" className={primaryButtonClass}>
                         Vytvořit uživatele
                     </button>
-                </form>
+                </PersistedForm>
             </section>
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">

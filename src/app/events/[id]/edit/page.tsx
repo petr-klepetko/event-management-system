@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import EventClientFields from '@/components/forms/EventClientFields'
+import PersistedForm from '@/components/forms/PersistedForm'
 import {
     buttonClass,
     inputClass,
@@ -51,13 +52,14 @@ export default async function EditEventPage({
     const updateAction = updateEventAction.bind(null, {
         eventId: event.id,
     })
+    const formPersistenceKey = `event-form:edit:${event.id}`
 
     return (
         <main className="mx-auto max-w-4xl p-8">
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
-                    { label: 'Akce', href: '/events' },
+                    { label: 'Akce a události', href: '/events' },
                     { label: event.title, href: `/events/${event.id}` },
                     { label: 'Upravit akci', href: `/events/${event.id}/edit` },
                 ]}
@@ -76,7 +78,11 @@ export default async function EditEventPage({
                     </p>
                 ) : null}
 
-                <form action={updateAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={updateAction}
+                    className="mt-4 grid gap-4"
+                    storageKey={formPersistenceKey}
+                >
                     <div className="grid gap-2">
                         <label htmlFor="title" className="font-medium">
                             Název
@@ -167,6 +173,7 @@ export default async function EditEventPage({
                         defaultOneOffClientName={event.oneOffClientName}
                         defaultOneOffClientPhone={event.oneOffClientPhone}
                         defaultOneOffClientEmail={event.oneOffClientEmail}
+                        persistenceKey={formPersistenceKey}
                     />
 
                     <div className="grid gap-2">
@@ -203,7 +210,7 @@ export default async function EditEventPage({
                     <button type="submit" className={buttonClass}>
                         Uložit změny
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

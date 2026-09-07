@@ -14,6 +14,7 @@ import {
 } from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
+import PersistedForm from '@/components/forms/PersistedForm'
 import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type ClientDetailPageProps = {
@@ -467,7 +468,11 @@ export default async function ClientDetailPage({
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Přidat kontakt</h2>
 
-                <form action={createContactForClient} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={createContactForClient}
+                    className="mt-4 grid gap-4"
+                    storageKey={`contact-form:new:${client.id}`}
+                >
                     <div className="grid gap-2 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <label htmlFor="firstName" className="font-medium">
@@ -576,7 +581,7 @@ export default async function ClientDetailPage({
                     >
                         Přidat kontakt
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

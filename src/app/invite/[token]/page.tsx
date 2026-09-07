@@ -1,3 +1,4 @@
+import PersistedForm from '@/components/forms/PersistedForm'
 import { inputClass, primaryButtonClass } from '@/lib/ui/styles'
 import { acceptInviteAction } from './actions'
 
@@ -32,7 +33,11 @@ export default async function InvitePage({
                     </p>
                 ) : null}
 
-                <form action={action} className="mt-6 grid gap-4">
+                <PersistedForm
+                    action={action}
+                    className="mt-6 grid gap-4"
+                    storageKey={`invite-form:${token}`}
+                >
                     <div className="grid gap-2">
                         <label htmlFor="fullName" className="font-medium">
                             Jméno
@@ -65,7 +70,7 @@ export default async function InvitePage({
                     <button type="submit" className={primaryButtonClass}>
                         Přijmout pozvánku
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

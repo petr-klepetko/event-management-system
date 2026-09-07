@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { inputClass } from '@/lib/ui/styles'
 
 type ClientOption = {
@@ -19,11 +19,22 @@ export default function ClientCombobox({
     defaultClientId,
     required = false,
 }: ClientComboboxProps) {
-    const defaultClient =
-        clients.find((client) => client.id === defaultClientId) ?? null
+    const defaultClient = useMemo(
+        () => clients.find((client) => client.id === defaultClientId) ?? null,
+        [clients, defaultClientId]
+    )
     const [selectedClientId, setSelectedClientId] = useState(defaultClient?.id ?? '')
     const [query, setQuery] = useState(defaultClient?.name ?? '')
     const [isOpen, setIsOpen] = useState(false)
+
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            setSelectedClientId(defaultClient?.id ?? '')
+            setQuery(defaultClient?.name ?? '')
+        }, 0)
+
+        return () => window.clearTimeout(timeoutId)
+    }, [defaultClient?.id, defaultClient?.name])
 
     const filteredClients = useMemo(() => {
         const normalizedQuery = query.trim().toLowerCase()

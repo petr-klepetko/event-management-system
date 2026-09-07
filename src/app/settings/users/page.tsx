@@ -1,5 +1,6 @@
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
+import PersistedForm from '@/components/forms/PersistedForm'
 import {
     compactSecondaryButtonClass,
     inputClass,
@@ -66,7 +67,11 @@ export default async function TenantUsersPage({
                     </p>
                 ) : null}
 
-                <form action={createTenantInviteAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={createTenantInviteAction}
+                    className="mt-4 grid gap-4"
+                    storageKey="tenant-invite-form:new"
+                >
                     <div className="grid gap-2 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <label htmlFor="email" className="font-medium">
@@ -103,7 +108,7 @@ export default async function TenantUsersPage({
                     <button type="submit" className={primaryButtonClass}>
                         Vytvořit pozvánku
                     </button>
-                </form>
+                </PersistedForm>
             </section>
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">

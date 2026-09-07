@@ -2,6 +2,7 @@
 
 import SearchableSelect from '@/components/forms/SearchableSelect'
 import EventServiceAssignmentsEditor from '@/components/forms/EventServiceAssignmentsEditor'
+import PersistedForm from '@/components/forms/PersistedForm'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { useState } from 'react'
 
@@ -27,6 +28,7 @@ export default function AddServiceForm({
     assignableUsers,
     action,
 }: Props) {
+    const formPersistenceKey = 'event-service-form:new'
     const [customName, setCustomName] = useState('')
     const [price, setPrice] = useState('')
     const [description, setDescription] = useState('')
@@ -47,7 +49,11 @@ export default function AddServiceForm({
     }
 
     return (
-        <form action={action} className="mt-4 grid gap-4">
+        <PersistedForm
+            action={action}
+            className="mt-4 grid gap-4"
+            storageKey={formPersistenceKey}
+        >
             <div className="grid gap-2">
                 <label htmlFor="serviceCatalogItemId" className="font-medium">
                     Služba z katalogu
@@ -110,7 +116,10 @@ export default function AddServiceForm({
                 />
             </div>
 
-            <EventServiceAssignmentsEditor users={assignableUsers} />
+            <EventServiceAssignmentsEditor
+                users={assignableUsers}
+                persistenceKey={formPersistenceKey}
+            />
 
             <button
                 type="submit"
@@ -118,6 +127,6 @@ export default function AddServiceForm({
             >
                 Přidat službu
             </button>
-        </form>
+        </PersistedForm>
     )
 }

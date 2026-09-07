@@ -1,4 +1,5 @@
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import PersistedForm from '@/components/forms/PersistedForm'
 import { buttonClass, inputClass, optionClass } from '@/lib/ui/styles'
 import { createClientAction } from '../actions'
 import { requireTenantManagerContext } from '@/lib/auth/current-user'
@@ -38,7 +39,11 @@ export default async function NewClientPage({
                     </p>
                 ) : null}
 
-                <form action={createClientAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={createClientAction}
+                    className="mt-4 grid gap-4"
+                    storageKey="client-form:new"
+                >
                     <div className="grid gap-2">
                         <label htmlFor="name" className="font-medium">
                             Název
@@ -130,7 +135,7 @@ export default async function NewClientPage({
                     <button type="submit" className={buttonClass}>
                         Vytvořit klienta
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

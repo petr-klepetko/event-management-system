@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import PersistedForm from '@/components/forms/PersistedForm'
 import { buttonClass, inputClass, optionClass } from '@/lib/ui/styles'
 import { getClientById } from '@/modules/clients/client.service'
 import { updateClientAction } from '../../actions'
@@ -55,7 +56,11 @@ export default async function EditClientPage({
                     </p>
                 ) : null}
 
-                <form action={updateAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={updateAction}
+                    className="mt-4 grid gap-4"
+                    storageKey={`client-form:edit:${client.id}`}
+                >
                     <div className="grid gap-2">
                         <label htmlFor="name" className="font-medium">
                             Název
@@ -147,7 +152,7 @@ export default async function EditClientPage({
                     <button type="submit" className={buttonClass}>
                         Uložit změny
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

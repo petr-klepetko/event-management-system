@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import SearchableSelect from '@/components/forms/SearchableSelect'
+import type { PersistedFormField } from '@/components/forms/PersistedForm'
 import { compactSecondaryButtonClass, inputClass } from '@/lib/ui/styles'
 
 type AssignableUser = {
@@ -30,6 +31,7 @@ type EventServiceAssignmentsEditorProps = {
         workDescription: string | null
         reward: string
     }>
+    persistenceKey?: string
 }
 
 function createEmptyAssignment(rowId: string): AssignmentValue {
@@ -44,9 +46,66 @@ function createEmptyAssignment(rowId: string): AssignmentValue {
     }
 }
 
+function getPersistedAssignments(persistenceKey?: string) {
+    if (!persistenceKey || !new URLSearchParams(window.location.search).has('error')) {
+        return null
+    }
+
+    const savedValue = window.sessionStorage.getItem(persistenceKey)
+
+    if (!savedValue) {
+        return null
+    }
+
+    try {
+        const savedFields = JSON.parse(savedValue) as PersistedFormField[]
+        const fieldsByName = new Map<string, PersistedFormField[]>()
+
+        for (const field of savedFields) {
+            fieldsByName.set(field.name, [
+                ...(fieldsByName.get(field.name) ?? []),
+                field,
+            ])
+        }
+
+        const rowCount = Math.max(
+            fieldsByName.get('assignmentUserId')?.length ?? 0,
+            fieldsByName.get('assignmentSupplierName')?.length ?? 0,
+            fieldsByName.get('assignmentRole')?.length ?? 0,
+            fieldsByName.get('assignmentWorkDescription')?.length ?? 0,
+            fieldsByName.get('assignmentReward')?.length ?? 0
+        )
+
+        return Array.from({ length: rowCount }, (_, index) => {
+            const userId = fieldsByName.get('assignmentUserId')?.[index]?.value ?? ''
+            const supplierName =
+                fieldsByName.get('assignmentSupplierName')?.[index]?.value ?? ''
+            const roleValue =
+                fieldsByName.get('assignmentRole')?.[index]?.value === 'RESPONSIBLE'
+                    ? 'RESPONSIBLE'
+                    : 'WORKER'
+
+            return {
+                rowId: `persisted-assignment-${index}`,
+                type: userId ? 'INTERNAL' : 'EXTERNAL',
+                userId,
+                supplierName,
+                role: roleValue,
+                workDescription:
+                    fieldsByName.get('assignmentWorkDescription')?.[index]?.value ?? '',
+                reward: fieldsByName.get('assignmentReward')?.[index]?.value || '0',
+            } satisfies AssignmentValue
+        })
+    } catch {
+        window.sessionStorage.removeItem(persistenceKey)
+        return null
+    }
+}
+
 export default function EventServiceAssignmentsEditor({
     users,
     defaultAssignments = [],
+    persistenceKey,
 }: EventServiceAssignmentsEditorProps) {
     const [assignments, setAssignments] = useState<AssignmentValue[]>(
         defaultAssignments.length > 0
@@ -61,6 +120,20 @@ export default function EventServiceAssignmentsEditor({
               }))
             : [createEmptyAssignment('assignment-empty-0')]
     )
+
+    useEffect(() => {
+        const persistedAssignments = getPersistedAssignments(persistenceKey)
+
+        if (!persistedAssignments) {
+            return
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            setAssignments(persistedAssignments)
+        }, 0)
+
+        return () => window.clearTimeout(timeoutId)
+    }, [persistenceKey])
 
     function updateAssignment(
         rowId: string,

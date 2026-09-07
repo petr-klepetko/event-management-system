@@ -1,5 +1,6 @@
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import EventClientFields from '@/components/forms/EventClientFields'
+import PersistedForm from '@/components/forms/PersistedForm'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { getEventFormOptions } from '@/modules/events/event.service'
 import { createEventAction } from '../actions'
@@ -16,6 +17,7 @@ export default async function NewEventPage({
     searchParams,
 }: NewEventPageProps) {
     const { clientId, error } = await searchParams
+    const formPersistenceKey = 'event-form:new'
     const auth = await requireTenantManagerContext()
     const formOptions = await getEventFormOptions(auth)
 
@@ -24,7 +26,7 @@ export default async function NewEventPage({
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
-                    { label: 'Akce', href: '/events' },
+                    { label: 'Akce a události', href: '/events' },
                     { label: 'Nová akce', href: '/events/new' },
                 ]}
             />
@@ -42,7 +44,11 @@ export default async function NewEventPage({
                     </p>
                 ) : null}
 
-                <form action={createEventAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={createEventAction}
+                    className="mt-4 grid gap-4"
+                    storageKey={formPersistenceKey}
+                >
                     <div className="grid gap-2">
                         <label htmlFor="title" className="font-medium">
                             Název
@@ -104,6 +110,7 @@ export default async function NewEventPage({
                         contacts={formOptions.contacts}
                         defaultClientMode="REGULAR"
                         defaultClientId={clientId}
+                        persistenceKey={formPersistenceKey}
                     />
 
                     <div className="grid gap-2">
@@ -139,7 +146,7 @@ export default async function NewEventPage({
                     <button type="submit" className={buttonClass}>
                         Vytvořit akci
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

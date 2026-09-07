@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ClientCombobox from '@/components/forms/ClientCombobox'
 import SearchableSelect from '@/components/forms/SearchableSelect'
+import type { PersistedFormField } from '@/components/forms/PersistedForm'
 import { inputClass } from '@/lib/ui/styles'
 
 type ClientOption = {
@@ -30,6 +31,50 @@ type EventClientFieldsProps = {
     defaultOneOffClientName?: string | null
     defaultOneOffClientPhone?: string | null
     defaultOneOffClientEmail?: string | null
+    persistenceKey?: string
+}
+
+type PersistedEventClientFields = {
+    clientMode?: 'REGULAR' | 'ONE_OFF'
+    clientId?: string
+    primaryContactId?: string
+    oneOffClientName?: string
+    oneOffClientPhone?: string
+    oneOffClientEmail?: string
+}
+
+function getPersistedEventClientFields(persistenceKey?: string) {
+    if (!persistenceKey || !new URLSearchParams(window.location.search).has('error')) {
+        return null
+    }
+
+    const savedValue = window.sessionStorage.getItem(persistenceKey)
+
+    if (!savedValue) {
+        return null
+    }
+
+    try {
+        const savedFields = JSON.parse(savedValue) as PersistedFormField[]
+        const getValue = (name: string) =>
+            savedFields.find((field) => field.name === name)?.value
+        const savedMode = getValue('clientMode')
+
+        return {
+            clientMode:
+                savedMode === 'REGULAR' || savedMode === 'ONE_OFF'
+                    ? savedMode
+                    : undefined,
+            clientId: getValue('clientId'),
+            primaryContactId: getValue('primaryContactId'),
+            oneOffClientName: getValue('oneOffClientName'),
+            oneOffClientPhone: getValue('oneOffClientPhone'),
+            oneOffClientEmail: getValue('oneOffClientEmail'),
+        } satisfies PersistedEventClientFields
+    } catch {
+        window.sessionStorage.removeItem(persistenceKey)
+        return null
+    }
 }
 
 export default function EventClientFields({
@@ -41,10 +86,41 @@ export default function EventClientFields({
     defaultOneOffClientName,
     defaultOneOffClientPhone,
     defaultOneOffClientEmail,
+    persistenceKey,
 }: EventClientFieldsProps) {
     const [clientMode, setClientMode] = useState<'REGULAR' | 'ONE_OFF'>(
         defaultClientMode ?? (defaultClientId ? 'REGULAR' : 'ONE_OFF')
     )
+    const [persistedFields, setPersistedFields] =
+        useState<PersistedEventClientFields | null>(null)
+
+    useEffect(() => {
+        const persistedEventClientFields = getPersistedEventClientFields(persistenceKey)
+
+        if (!persistedEventClientFields) {
+            return
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            setPersistedFields(persistedEventClientFields)
+
+            if (persistedEventClientFields.clientMode) {
+                setClientMode(persistedEventClientFields.clientMode)
+            }
+        }, 0)
+
+        return () => window.clearTimeout(timeoutId)
+    }, [persistenceKey])
+
+    const clientId = persistedFields?.clientId ?? defaultClientId ?? undefined
+    const primaryContactId =
+        persistedFields?.primaryContactId ?? defaultPrimaryContactId ?? ''
+    const oneOffClientName =
+        persistedFields?.oneOffClientName ?? defaultOneOffClientName ?? ''
+    const oneOffClientPhone =
+        persistedFields?.oneOffClientPhone ?? defaultOneOffClientPhone ?? ''
+    const oneOffClientEmail =
+        persistedFields?.oneOffClientEmail ?? defaultOneOffClientEmail ?? ''
 
     return (
         <div className="grid gap-4">
@@ -79,7 +155,7 @@ export default function EventClientFields({
                         </label>
                         <ClientCombobox
                             clients={clients}
-                            defaultClientId={defaultClientId ?? undefined}
+                            defaultClientId={clientId}
                             required
                         />
                     </div>
@@ -91,7 +167,7 @@ export default function EventClientFields({
                         <SearchableSelect
                             id="primaryContactId"
                             name="primaryContactId"
-                            defaultValue={defaultPrimaryContactId ?? ''}
+                            defaultValue={primaryContactId}
                             placeholder="Začni psát jméno kontaktu nebo klienta..."
                             emptyOptionLabel="Bez vybraného kontaktu"
                             options={contacts.map((contact) => ({
@@ -116,7 +192,7 @@ export default function EventClientFields({
                             name="oneOffClientName"
                             type="text"
                             required
-                            defaultValue={defaultOneOffClientName ?? ''}
+                            defaultValue={oneOffClientName}
                             className={inputClass}
                             placeholder="Např. rodiče 4.A"
                         />
@@ -131,7 +207,7 @@ export default function EventClientFields({
                                 id="oneOffClientPhone"
                                 name="oneOffClientPhone"
                                 type="text"
-                                defaultValue={defaultOneOffClientPhone ?? ''}
+                                defaultValue={oneOffClientPhone}
                                 className={inputClass}
                                 placeholder="+420 777 000 000"
                             />
@@ -145,7 +221,7 @@ export default function EventClientFields({
                                 id="oneOffClientEmail"
                                 name="oneOffClientEmail"
                                 type="email"
-                                defaultValue={defaultOneOffClientEmail ?? ''}
+                                defaultValue={oneOffClientEmail}
                                 className={inputClass}
                                 placeholder="kontakt@example.cz"
                             />

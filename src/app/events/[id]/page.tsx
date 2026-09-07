@@ -14,6 +14,7 @@ import {
 import ConfirmSubmitButton from '@/components/forms/ConfirmSubmitButton'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
+import PersistedForm from '@/components/forms/PersistedForm'
 import {
     compactSecondaryButtonClass,
     inputClass,
@@ -111,7 +112,7 @@ export default async function EventDetailPage({
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
-                    { label: 'Akce', href: '/events' },
+                    { label: 'Akce a události', href: '/events' },
                     { label: event.title, href: `/events/${event.id}` },
                 ]}
             />
@@ -797,9 +798,11 @@ export default async function EventDetailPage({
                     ) : null}
 
                     {canManageEvent ? (
-                        <form
+                        <PersistedForm
                             action={createCost}
                             className="mt-6 grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 md:grid-cols-[minmax(0,1fr)_14rem] lg:grid-cols-[minmax(0,1fr)_14rem_auto]"
+                            storageKey={`event-cost-form:new:${event.id}`}
+                            restoreOnParams={['financeError']}
                         >
                             <div className="grid gap-2">
                                 <label htmlFor="costName" className="text-sm font-medium">
@@ -845,7 +848,7 @@ export default async function EventDetailPage({
                                     Přidat náklad
                                 </button>
                             </div>
-                        </form>
+                        </PersistedForm>
                     ) : null}
 
                     {event.costs.length === 0 ? (
