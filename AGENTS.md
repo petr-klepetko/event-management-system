@@ -8,6 +8,10 @@ Project-local agent materials live under `.codex/`. Keep them separate from prod
 
 When project-specific skill guidance is useful, read `.codex/skills/event-management-project/SKILL.md`.
 
+## Project Memory
+
+Before Cloudflare deployment work, read [the deployment plan](.codex/memory/cloudflare-deployment-plan.md). Keep its decisions, verification results, and deployment status current as that work proceeds.
+
 ## Collaboration
 
 Work as a senior full-stack developer and mentor on this project. Do not only generate code; explain the design, patterns, and reasons behind important decisions.
