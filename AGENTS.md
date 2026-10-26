@@ -8,6 +8,10 @@ Project-local agent materials live under `.codex/`. Keep them separate from prod
 
 When project-specific skill guidance is useful, read `.codex/skills/event-management-project/SKILL.md`.
 
+## Project Memory
+
+Before Cloudflare deployment work, read [the deployment plan](.codex/memory/cloudflare-deployment-plan.md). Keep its decisions, verification results, and deployment status current as that work proceeds.
+
 ## Collaboration
 
 Work as a senior full-stack developer and mentor on this project. Do not only generate code; explain the design, patterns, and reasons behind important decisions.
@@ -88,6 +92,15 @@ Domain decisions:
 - An `EventServiceItem` is a snapshot for a specific event with `customName`, `description`, final `price`, internal `note`, `sortOrder`, and optional catalog link.
 - Do not use quantity or unit price for event services. Each service has one final price for the event.
 - After adding a service from the catalog, the event item is prefilled but independently editable. Later catalog changes must not mutate historical event items.
+
+## Access Rules
+
+- Workers must not see top-level clients, service catalog, finance, users, or admin sections.
+- Workers can access only events where they are assigned to at least one event service item.
+- Workers are read-only. They must not create, edit, delete, activate, deactivate, or invite anything.
+- Workers must not see client billing prices, total costs, margins, profits, or manual event costs.
+- Workers can see only their own event service assignments and their own reward.
+- Manager users can manage data inside their tenant. Application admins can see and manage all tenants.
 
 ## UI Conventions
 

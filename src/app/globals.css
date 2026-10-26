@@ -345,6 +345,7 @@ button[type='submit'] {
 }
 
 .offer-grid dd {
+  overflow-wrap: anywhere;
   color: #172033;
   font-size: 0.9rem;
   font-weight: 600;
@@ -359,14 +360,14 @@ button[type='submit'] {
 .offer-table th,
 .offer-table td {
   border-bottom: 1px solid var(--border);
-  padding: 0.75rem 0.75rem 0.75rem 0;
+  padding: 0.75rem 0.5rem;
   text-align: left;
   vertical-align: top;
 }
 
 .offer-table th:last-child,
 .offer-table td:last-child {
-  padding-right: 0;
+  padding-right: 0.5rem;
   text-align: right;
   white-space: nowrap;
 }

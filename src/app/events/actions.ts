@@ -8,16 +8,24 @@ import {
     updateEvent,
 } from '@/modules/events/event.service'
 import { redirect } from 'next/navigation'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 function readEventFormData(formData: FormData) {
     const title = String(formData.get('title') ?? '').trim()
     const eventType = String(formData.get('eventType') ?? '').trim()
     const dateStartRaw = String(formData.get('dateStart') ?? '').trim()
     const venueName = String(formData.get('venueName') ?? '').trim()
+    const clientMode =
+        String(formData.get('clientMode') ?? 'REGULAR').trim() === 'ONE_OFF'
+            ? 'ONE_OFF'
+            : 'REGULAR'
     const clientId = String(formData.get('clientId') ?? '').trim()
     const primaryContactId = String(formData.get('primaryContactId') ?? '').trim()
+    const oneOffClientName = String(formData.get('oneOffClientName') ?? '').trim()
+    const oneOffClientPhone = String(formData.get('oneOffClientPhone') ?? '').trim()
+    const oneOffClientEmail = String(formData.get('oneOffClientEmail') ?? '').trim()
     const internalNote = String(formData.get('internalNote') ?? '').trim()
+    const hideOfferItemPrices = formData.get('hideOfferItemPrices') === 'on'
 
     if (!title) {
         throw new Error('Název akce je povinný.')
@@ -31,8 +39,12 @@ function readEventFormData(formData: FormData) {
         throw new Error('Datum akce je povinné.')
     }
 
-    if (!clientId) {
+    if (clientMode === 'REGULAR' && !clientId) {
         throw new Error('Klient je povinný.')
+    }
+
+    if (clientMode === 'ONE_OFF' && !oneOffClientName) {
+        throw new Error('U jednorázové akce vyplň název klienta.')
     }
 
     const dateStart = new Date(dateStartRaw)
@@ -46,17 +58,27 @@ function readEventFormData(formData: FormData) {
         eventType,
         dateStart,
         venueName: venueName || null,
-        clientId,
-        primaryContactId: primaryContactId || null,
+        clientId: clientMode === 'REGULAR' ? clientId : null,
+        primaryContactId:
+            clientMode === 'REGULAR' ? primaryContactId || null : null,
+        oneOffClientName:
+            clientMode === 'ONE_OFF' ? oneOffClientName || null : null,
+        oneOffClientPhone:
+            clientMode === 'ONE_OFF' ? oneOffClientPhone || null : null,
+        oneOffClientEmail:
+            clientMode === 'ONE_OFF' ? oneOffClientEmail || null : null,
         internalNote: internalNote || null,
+        hideOfferItemPrices,
     }
 }
 
 export async function createEventAction(formData: FormData) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
+    let clientId = ''
 
     try {
-        const auth = await requireAuthContext()
+        clientId = String(formData.get('clientId') ?? '').trim()
         const input = readEventFormData(formData)
 
         await createEvent(input, auth)
@@ -70,7 +92,15 @@ export async function createEventAction(formData: FormData) {
     }
 
     if (errorMessage) {
-        redirect(`/events/new?error=${encodeURIComponent(errorMessage)}`)
+        const params = new URLSearchParams({
+            error: errorMessage,
+        })
+
+        if (clientId) {
+            params.set('clientId', clientId)
+        }
+
+        redirect(`/events/new?${params.toString()}`)
     }
 
     redirect('/events?success=AkceBylaVytvorena')
@@ -84,10 +114,10 @@ export async function updateEventAction(
     args: UpdateEventActionArgs,
     formData: FormData
 ) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
 
     try {
-        const auth = await requireAuthContext()
         const input = readEventFormData(formData)
         const statusRaw = String(formData.get('status') ?? '').trim()
         const allowedStatuses: EventStatus[] = [
@@ -130,10 +160,10 @@ type DeleteEventActionArgs = {
 }
 
 export async function deleteEventAction(args: DeleteEventActionArgs) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
 
     try {
-        const auth = await requireAuthContext()
         await deleteEvent(args.eventId, auth)
         revalidatePath('/events')
     } catch (error) {

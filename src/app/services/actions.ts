@@ -7,7 +7,7 @@ import {
     setServiceCatalogItemActive,
     updateServiceCatalogItem,
 } from '@/modules/services/service-catalog.service'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 function readTrimmedString(formData: FormData, key: string) {
     return String(formData.get(key) ?? '').trim()
@@ -25,10 +25,10 @@ function normalizePrice(rawPrice: string) {
 }
 
 export async function createServiceCatalogItemAction(formData: FormData) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
 
     try {
-        const auth = await requireAuthContext()
         const name = readTrimmedString(formData, 'name')
         const description = readTrimmedString(formData, 'description')
         const defaultPrice = normalizePrice(
@@ -68,10 +68,10 @@ export async function updateServiceCatalogItemAction(
     args: UpdateServiceCatalogItemActionArgs,
     formData: FormData
 ) {
+    const auth = await requireTenantManagerContext()
     let errorMessage: string | null = null
 
     try {
-        const auth = await requireAuthContext()
         const name = readTrimmedString(formData, 'name')
         const description = readTrimmedString(formData, 'description')
         const defaultPrice = normalizePrice(
@@ -115,7 +115,7 @@ type SetServiceCatalogItemActiveActionArgs = {
 export async function setServiceCatalogItemActiveAction(
     args: SetServiceCatalogItemActiveActionArgs
 ) {
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
     await setServiceCatalogItemActive(args.serviceId, args.isActive, auth)
 
     revalidatePath('/services')

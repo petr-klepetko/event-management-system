@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import PersistedForm from '@/components/forms/PersistedForm'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 import { getContactById } from '@/modules/clients/client.service'
 import { updateContactAction } from './actions'
 
@@ -21,7 +22,7 @@ export default async function EditContactPage({
 }: EditContactPageProps) {
     const { id: clientId, contactId } = await params
     const { error } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
     const contact = await getContactById(contactId, clientId, auth)
 
     if (!contact) {
@@ -63,7 +64,11 @@ export default async function EditContactPage({
                     </p>
                 ) : null}
 
-                <form action={updateAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={updateAction}
+                    className="mt-4 grid gap-4"
+                    storageKey={`contact-form:edit:${contactId}`}
+                >
                     <div className="grid gap-2 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <label htmlFor="firstName" className="font-medium">
@@ -123,6 +128,20 @@ export default async function EditContactPage({
                     </div>
 
                     <div className="grid gap-2">
+                        <label htmlFor="instagram" className="font-medium">
+                            Instagram
+                        </label>
+                        <input
+                            id="instagram"
+                            name="instagram"
+                            type="text"
+                            defaultValue={contact.instagram ?? ''}
+                            className={inputClass}
+                            placeholder="@instagram_handle"
+                        />
+                    </div>
+
+                    <div className="grid gap-2">
                         <label htmlFor="roleLabel" className="font-medium">
                             Role
                         </label>
@@ -160,7 +179,7 @@ export default async function EditContactPage({
                     <button type="submit" className={buttonClass}>
                         Uložit změny
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

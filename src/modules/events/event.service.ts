@@ -1,5 +1,9 @@
 import { EventStatus } from '@prisma/client'
-import { AuthContext, getTenantScopedWhere } from '@/lib/auth/current-user'
+import {
+    AuthContext,
+    getEventScopedWhere,
+    getTenantScopedWhere,
+} from '@/lib/auth/current-user'
 import { prisma } from '@/lib/db/prisma'
 
 export type CreateEventInput = {
@@ -7,9 +11,13 @@ export type CreateEventInput = {
     eventType: string
     dateStart: Date
     venueName?: string | null
-    clientId: string
+    clientId?: string | null
     primaryContactId?: string | null
+    oneOffClientName?: string | null
+    oneOffClientPhone?: string | null
+    oneOffClientEmail?: string | null
     internalNote?: string | null
+    hideOfferItemPrices: boolean
 }
 
 export type UpdateEventInput = CreateEventInput & {
@@ -17,9 +25,73 @@ export type UpdateEventInput = CreateEventInput & {
     status: EventStatus
 }
 
+type MoneyLike = {
+    toString(): string
+}
+
+type EventServiceItemFinanceInput = {
+    price: MoneyLike
+    assignments: Array<{
+        reward: MoneyLike
+    }>
+}
+
+type EventFinanceInput = {
+    serviceItems: EventServiceItemFinanceInput[]
+    costs: Array<{
+        amount: MoneyLike
+    }>
+}
+
+export function calculateEventServiceItemFinance(
+    item: EventServiceItemFinanceInput
+) {
+    const price = Number(item.price.toString())
+    const workerCosts = item.assignments.reduce(
+        (sum, assignment) => sum + Number(assignment.reward.toString()),
+        0
+    )
+
+    return {
+        price,
+        workerCosts,
+        margin: price - workerCosts,
+    }
+}
+
+export function calculateEventFinance(event: EventFinanceInput) {
+    const serviceTotals = event.serviceItems.reduce(
+        (totals, item) => {
+            const itemFinance = calculateEventServiceItemFinance(item)
+
+            return {
+                invoicePrice: totals.invoicePrice + itemFinance.price,
+                workerCosts: totals.workerCosts + itemFinance.workerCosts,
+            }
+        },
+        {
+            invoicePrice: 0,
+            workerCosts: 0,
+        }
+    )
+    const eventCosts = event.costs.reduce(
+        (sum, cost) => sum + Number(cost.amount.toString()),
+        0
+    )
+    const costs = serviceTotals.workerCosts + eventCosts
+
+    return {
+        invoicePrice: serviceTotals.invoicePrice,
+        workerCosts: serviceTotals.workerCosts,
+        eventCosts,
+        costs,
+        profit: serviceTotals.invoicePrice - costs,
+    }
+}
+
 export async function getEvents(auth: AuthContext) {
     return prisma.event.findMany({
-        where: getTenantScopedWhere(auth),
+        where: getEventScopedWhere(auth),
         orderBy: {
             dateStart: 'desc',
         },
@@ -31,10 +103,10 @@ export async function getEvents(auth: AuthContext) {
 }
 
 export async function getEventById(id: string, auth: AuthContext) {
-    return prisma.event.findUnique({
+    return prisma.event.findFirst({
         where: {
             id,
-            ...getTenantScopedWhere(auth),
+            ...getEventScopedWhere(auth),
         },
         include: {
             client: true,
@@ -45,9 +117,70 @@ export async function getEventById(id: string, auth: AuthContext) {
                 },
                 include: {
                     serviceCatalogItem: true,
+                    assignments: {
+                        orderBy: {
+                            createdAt: 'asc',
+                        },
+                        include: {
+                            user: {
+                                select: {
+                                    id: true,
+                                    fullName: true,
+                                    email: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            costs: {
+                orderBy: {
+                    createdAt: 'asc',
                 },
             },
         },
+    })
+}
+
+export async function getEventFinanceRows(auth: AuthContext) {
+    const events = await prisma.event.findMany({
+        where: getEventScopedWhere(auth),
+        orderBy: {
+            dateStart: 'desc',
+        },
+        select: {
+            id: true,
+            title: true,
+            dateStart: true,
+            serviceItems: {
+                select: {
+                    price: true,
+                    assignments: {
+                        select: {
+                            reward: true,
+                        },
+                    },
+                },
+            },
+            costs: {
+                select: {
+                    amount: true,
+                },
+            },
+        },
+    })
+
+    return events.map((event) => {
+        const finance = calculateEventFinance(event)
+
+        return {
+            id: event.id,
+            title: event.title,
+            dateStart: event.dateStart,
+            invoicePrice: finance.invoicePrice,
+            costs: finance.costs,
+            profit: finance.profit,
+        }
     })
 }
 
@@ -87,6 +220,7 @@ export async function getEventFormOptions(auth: AuthContext) {
                 id: true,
                 firstName: true,
                 lastName: true,
+                instagram: true,
                 clientId: true,
                 client: {
                     select: {
@@ -101,27 +235,43 @@ export async function getEventFormOptions(auth: AuthContext) {
 }
 
 export async function createEvent(input: CreateEventInput, auth: AuthContext) {
-    const client = await prisma.client.findUnique({
-        where: {
-            id: input.clientId,
-            ...getTenantScopedWhere(auth),
-        },
-        select: {
-            id: true,
-            tenantId: true,
-        },
-    })
+    const client = input.clientId
+        ? await prisma.client.findUnique({
+              where: {
+                  id: input.clientId,
+                  ...getTenantScopedWhere(auth),
+              },
+              select: {
+                  id: true,
+                  tenantId: true,
+              },
+          })
+        : null
 
-    if (!client) {
+    if (input.clientId && !client) {
         throw new Error('Klient neexistuje nebo k němu nemáš přístup.')
     }
 
-    if (input.primaryContactId) {
+    if (!input.clientId && !input.oneOffClientName) {
+        throw new Error('U jednorázové akce vyplň název klienta.')
+    }
+
+    if (!input.clientId && !auth.tenantId) {
+        throw new Error('Jednorázovou akci lze vytvořit jen v rámci tenantu.')
+    }
+
+    const eventTenantId = client?.tenantId ?? auth.tenantId
+
+    if (!eventTenantId) {
+        throw new Error('Akce musí patřit do tenantu.')
+    }
+
+    if (input.clientId && input.primaryContactId) {
         const contact = await prisma.contactPerson.findFirst({
             where: {
                 id: input.primaryContactId,
                 clientId: input.clientId,
-                tenantId: client.tenantId,
+                tenantId: eventTenantId,
             },
             select: {
                 id: true,
@@ -135,43 +285,69 @@ export async function createEvent(input: CreateEventInput, auth: AuthContext) {
 
     return prisma.event.create({
         data: {
-            tenantId: client.tenantId,
+            tenantId: eventTenantId,
             ownerUserId: auth.userId,
             title: input.title,
             eventType: input.eventType,
             status: EventStatus.DRAFT,
             dateStart: input.dateStart,
             venueName: input.venueName ?? null,
-            clientId: input.clientId,
-            primaryContactId: input.primaryContactId ?? null,
+            clientId: input.clientId ?? null,
+            primaryContactId: input.clientId ? input.primaryContactId ?? null : null,
+            oneOffClientName: input.clientId ? null : input.oneOffClientName ?? null,
+            oneOffClientPhone: input.clientId ? null : input.oneOffClientPhone ?? null,
+            oneOffClientEmail: input.clientId ? null : input.oneOffClientEmail ?? null,
             createdByUserId: auth.userId,
             internalNote: input.internalNote ?? null,
+            hideOfferItemPrices: input.hideOfferItemPrices,
         },
     })
 }
 
 export async function updateEvent(input: UpdateEventInput, auth: AuthContext) {
-    const client = await prisma.client.findUnique({
+    const existingEvent = await prisma.event.findFirst({
         where: {
-            id: input.clientId,
+            id: input.id,
             ...getTenantScopedWhere(auth),
         },
         select: {
-            id: true,
             tenantId: true,
         },
     })
 
-    if (!client) {
+    if (!existingEvent) {
+        throw new Error('Akce neexistuje nebo k ní nemáš přístup.')
+    }
+
+    const client = input.clientId
+        ? await prisma.client.findUnique({
+              where: {
+                  id: input.clientId,
+                  ...getTenantScopedWhere(auth),
+              },
+              select: {
+                  id: true,
+                  tenantId: true,
+              },
+          })
+        : null
+
+    if (input.clientId && !client) {
         throw new Error('Klient neexistuje nebo k němu nemáš přístup.')
     }
 
-    if (input.primaryContactId) {
+    if (!input.clientId && !input.oneOffClientName) {
+        throw new Error('U jednorázové akce vyplň název klienta.')
+    }
+
+    const eventTenantId = client?.tenantId ?? existingEvent.tenantId
+
+    if (input.clientId && input.primaryContactId) {
         const contact = await prisma.contactPerson.findFirst({
             where: {
                 id: input.primaryContactId,
                 clientId: input.clientId,
-                tenantId: client.tenantId,
+                tenantId: eventTenantId,
             },
             select: {
                 id: true,
@@ -189,15 +365,19 @@ export async function updateEvent(input: UpdateEventInput, auth: AuthContext) {
             ...getTenantScopedWhere(auth),
         },
         data: {
-            tenantId: client.tenantId,
+            tenantId: eventTenantId,
             title: input.title,
             eventType: input.eventType,
             status: input.status,
             dateStart: input.dateStart,
             venueName: input.venueName ?? null,
-            clientId: input.clientId,
-            primaryContactId: input.primaryContactId ?? null,
+            clientId: input.clientId ?? null,
+            primaryContactId: input.clientId ? input.primaryContactId ?? null : null,
+            oneOffClientName: input.clientId ? null : input.oneOffClientName ?? null,
+            oneOffClientPhone: input.clientId ? null : input.oneOffClientPhone ?? null,
+            oneOffClientEmail: input.clientId ? null : input.oneOffClientEmail ?? null,
             internalNote: input.internalNote ?? null,
+            hideOfferItemPrices: input.hideOfferItemPrices,
         },
     })
 }
@@ -233,6 +413,20 @@ export async function deleteEvent(eventId: string, auth: AuthContext) {
 
     if (existingDocument) {
         throw new Error('Akci nelze smazat, protože má vytvořené dokumenty.')
+    }
+
+    const existingCost = await prisma.eventCost.findFirst({
+        where: {
+            eventId,
+            ...getTenantScopedWhere(auth),
+        },
+        select: {
+            id: true,
+        },
+    })
+
+    if (existingCost) {
+        throw new Error('Akci nelze smazat, protože má zadané náklady.')
     }
 
     return prisma.event.delete({

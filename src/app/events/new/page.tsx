@@ -1,11 +1,14 @@
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
-import { buttonClass, inputClass, optionClass } from '@/lib/ui/styles'
+import EventClientFields from '@/components/forms/EventClientFields'
+import PersistedForm from '@/components/forms/PersistedForm'
+import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { getEventFormOptions } from '@/modules/events/event.service'
 import { createEventAction } from '../actions'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type NewEventPageProps = {
     searchParams: Promise<{
+        clientId?: string
         error?: string
     }>
 }
@@ -13,8 +16,9 @@ type NewEventPageProps = {
 export default async function NewEventPage({
     searchParams,
 }: NewEventPageProps) {
-    const { error } = await searchParams
-    const auth = await requireAuthContext()
+    const { clientId, error } = await searchParams
+    const formPersistenceKey = 'event-form:new'
+    const auth = await requireTenantManagerContext()
     const formOptions = await getEventFormOptions(auth)
 
     return (
@@ -22,7 +26,7 @@ export default async function NewEventPage({
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
-                    { label: 'Akce', href: '/events' },
+                    { label: 'Akce a události', href: '/events' },
                     { label: 'Nová akce', href: '/events/new' },
                 ]}
             />
@@ -40,7 +44,11 @@ export default async function NewEventPage({
                     </p>
                 ) : null}
 
-                <form action={createEventAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={createEventAction}
+                    className="mt-4 grid gap-4"
+                    storageKey={formPersistenceKey}
+                >
                     <div className="grid gap-2">
                         <label htmlFor="title" className="font-medium">
                             Název
@@ -97,62 +105,13 @@ export default async function NewEventPage({
                         />
                     </div>
 
-                    <div className="grid gap-2 sm:grid-cols-2">
-                        <div className="grid gap-2">
-                            <label htmlFor="clientId" className="font-medium">
-                                Klient
-                            </label>
-                            <select
-                                id="clientId"
-                                name="clientId"
-                                required
-                                defaultValue=""
-                                className={inputClass}
-                            >
-                                <option className={optionClass} value="" disabled>
-                                    Vyber klienta
-                                </option>
-                                {formOptions.clients.map((client) => (
-                                    <option
-                                        className={optionClass}
-                                        key={client.id}
-                                        value={client.id}
-                                    >
-                                        {client.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="grid gap-2">
-                            <label
-                                htmlFor="primaryContactId"
-                                className="font-medium"
-                            >
-                                Hlavní kontakt
-                            </label>
-                            <select
-                                id="primaryContactId"
-                                name="primaryContactId"
-                                defaultValue=""
-                                className={inputClass}
-                            >
-                                <option className={optionClass} value="">
-                                    Bez vybraného kontaktu
-                                </option>
-                                {formOptions.contacts.map((contact) => (
-                                    <option
-                                        className={optionClass}
-                                        key={contact.id}
-                                        value={contact.id}
-                                    >
-                                        {contact.firstName} {contact.lastName} (
-                                        {contact.client.name})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
+                    <EventClientFields
+                        clients={formOptions.clients}
+                        contacts={formOptions.contacts}
+                        defaultClientMode="REGULAR"
+                        defaultClientId={clientId}
+                        persistenceKey={formPersistenceKey}
+                    />
 
                     <div className="grid gap-2">
                         <label htmlFor="internalNote" className="font-medium">
@@ -167,10 +126,27 @@ export default async function NewEventPage({
                         />
                     </div>
 
+                    <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <input
+                            name="hideOfferItemPrices"
+                            type="checkbox"
+                            className="mt-1"
+                        />
+                        <span>
+                            <span className="block font-medium">
+                                Skrýt ceny jednotlivých položek v nabídce
+                            </span>
+                            <span className="mt-1 block text-sm text-gray-600">
+                                V PDF nabídce zůstane vidět celková cena, ale u služeb se
+                                nezobrazí ceny po položkách.
+                            </span>
+                        </span>
+                    </label>
+
                     <button type="submit" className={buttonClass}>
                         Vytvořit akci
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

@@ -10,9 +10,12 @@ import {
     compactSecondaryButtonClass,
     inputClass,
     primaryButtonClass,
+    secondaryButtonClass,
 } from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
+import PersistedForm from '@/components/forms/PersistedForm'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type ClientDetailPageProps = {
     params: Promise<{
@@ -30,7 +33,7 @@ export default async function ClientDetailPage({
 }: ClientDetailPageProps) {
     const { id } = await params
     const { error, success } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
 
     const client = await getClientById(id, auth)
 
@@ -54,12 +57,20 @@ export default async function ClientDetailPage({
 
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-3xl font-bold">{client.name}</h1>
-                <Link
-                    href={`/clients/${client.id}/edit`}
-                    className={primaryButtonClass}
-                >
-                    Upravit klienta
-                </Link>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                        href={`/events/new?clientId=${client.id}`}
+                        className={primaryButtonClass}
+                    >
+                        Nová akce pro klienta
+                    </Link>
+                    <Link
+                        href={`/clients/${client.id}/edit`}
+                        className={secondaryButtonClass}
+                    >
+                        Upravit klienta
+                    </Link>
+                </div>
             </div>
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
@@ -118,12 +129,37 @@ export default async function ClientDetailPage({
                     </p>
                 ) : (
                     <>
-                    <div className="mt-4 grid gap-4 md:hidden">
-                        {client.events.map((event) => (
-                            <article
-                                key={event.id}
-                                className="rounded-lg border border-slate-200 bg-white p-4"
-                            >
+                    <ClientSideListFilter
+                        listId="client-events"
+                        placeholder="Hledat podle akce, stavu nebo místa..."
+                    />
+
+                    <p
+                        data-filter-empty="client-events"
+                        hidden
+                        className="mt-4 text-sm text-gray-600"
+                    >
+                        Žádná akce neodpovídá filtru.
+                    </p>
+
+                    <div data-filter-list="client-events" className="mt-4 grid gap-4 md:hidden">
+                        {client.events.map((event) => {
+                            const filterText = [
+                                event.title,
+                                event.eventType,
+                                mapEventStatusToLabel(event.status),
+                                event.venueName,
+                            ]
+                                .filter(Boolean)
+                                .join(' ')
+
+                            return (
+                                <article
+                                    key={event.id}
+                                    data-filter-item
+                                    data-filter-text={filterText}
+                                    className="rounded-lg border border-slate-200 bg-white p-4"
+                                >
                                 <h3 className="text-base font-semibold">
                                     <Link
                                         href={`/events/${event.id}`}
@@ -158,25 +194,41 @@ export default async function ClientDetailPage({
                                         <dd className="mt-1">{event.venueName ?? '—'}</dd>
                                     </div>
                                 </dl>
-                            </article>
-                        ))}
+                                </article>
+                            )
+                        })}
                     </div>
 
-                    <div className="mt-4 hidden overflow-x-auto md:block">
+                    <div data-filter-list="client-events" className="mt-4 hidden overflow-x-auto md:block">
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
-                                    <th className="py-2 pr-4">Název</th>
-                                    <th className="py-2 pr-4">Typ</th>
-                                    <th className="py-2 pr-4">Datum</th>
-                                    <th className="py-2 pr-4">Stav</th>
-                                    <th className="py-2 pr-4">Místo</th>
+                                    <th className="py-2 px-2">Název</th>
+                                    <th className="py-2 px-2">Typ</th>
+                                    <th className="py-2 px-2">Datum</th>
+                                    <th className="py-2 px-2">Stav</th>
+                                    <th className="py-2 px-2">Místo</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {client.events.map((event) => (
-                                    <tr key={event.id} className="border-b">
-                                        <td className="py-2 pr-4">
+                                {client.events.map((event) => {
+                                    const filterText = [
+                                        event.title,
+                                        event.eventType,
+                                        mapEventStatusToLabel(event.status),
+                                        event.venueName,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' ')
+
+                                    return (
+                                    <tr
+                                        key={event.id}
+                                        data-filter-item
+                                        data-filter-text={filterText}
+                                        className="border-b"
+                                    >
+                                        <td className="py-2 px-2">
                                             <Link
                                                 href={`/events/${event.id}`}
                                                 className="underline underline-offset-4"
@@ -184,19 +236,20 @@ export default async function ClientDetailPage({
                                                 {event.title}
                                             </Link>
                                         </td>
-                                        <td className="py-2 pr-4">{event.eventType}</td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">{event.eventType}</td>
+                                        <td className="py-2 px-2">
                                             {new Intl.DateTimeFormat('cs-CZ', {
                                                 dateStyle: 'medium',
                                                 timeStyle: 'short',
                                             }).format(event.dateStart)}
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             {mapEventStatusToLabel(event.status)}
                                         </td>
-                                        <td className="py-2 pr-4">{event.venueName ?? '—'}</td>
+                                        <td className="py-2 px-2">{event.venueName ?? '—'}</td>
                                     </tr>
-                                ))}
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -231,12 +284,41 @@ export default async function ClientDetailPage({
                     </p>
                 ) : (
                     <>
-                    <div className="mt-4 grid gap-4 md:hidden">
-                        {client.contacts.map((contact) => (
-                            <article
-                                key={contact.id}
-                                className="rounded-lg border border-slate-200 bg-white p-4"
-                            >
+                    <ClientSideListFilter
+                        listId="client-contacts"
+                        placeholder="Hledat podle jména, kontaktu, role nebo poznámky..."
+                    />
+
+                    <p
+                        data-filter-empty="client-contacts"
+                        hidden
+                        className="mt-4 text-sm text-gray-600"
+                    >
+                        Žádný kontakt neodpovídá filtru.
+                    </p>
+
+                    <div data-filter-list="client-contacts" className="mt-4 grid gap-4 md:hidden">
+                        {client.contacts.map((contact) => {
+                            const filterText = [
+                                contact.firstName,
+                                contact.lastName,
+                                contact.email,
+                                contact.phone,
+                                contact.instagram,
+                                contact.roleLabel,
+                                contact.note,
+                                contact.isPrimary ? 'hlavní ano' : '',
+                            ]
+                                .filter(Boolean)
+                                .join(' ')
+
+                            return (
+                                <article
+                                    key={contact.id}
+                                    data-filter-item
+                                    data-filter-text={filterText}
+                                    className="rounded-lg border border-slate-200 bg-white p-4"
+                                >
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
                                         <h3 className="text-base font-semibold">
@@ -268,6 +350,12 @@ export default async function ClientDetailPage({
                                         </dd>
                                     </div>
                                     <div>
+                                        <dt className="font-medium text-gray-500">Instagram</dt>
+                                        <dd className="mt-1 break-words">
+                                            {contact.instagram ?? '—'}
+                                        </dd>
+                                    </div>
+                                    <div>
                                         <dt className="font-medium text-gray-500">
                                             Hlavní kontakt
                                         </dt>
@@ -282,29 +370,47 @@ export default async function ClientDetailPage({
                                         </dd>
                                     </div>
                                 </dl>
-                            </article>
-                        ))}
+                                </article>
+                            )
+                        })}
                     </div>
 
-                    <div className="mt-4 hidden overflow-x-auto md:block">
+                    <div data-filter-list="client-contacts" className="mt-4 hidden overflow-x-auto md:block">
                         <table className="min-w-full border-collapse">
                             <thead>
                                 <tr className="border-b text-left">
-                                    <th className="py-2 pr-4">Jméno</th>
-                                    <th className="py-2 pr-4">Kontakt</th>
-                                    <th className="py-2 pr-4">Role</th>
-                                    <th className="py-2 pr-4">Hlavní kontakt</th>
-                                    <th className="py-2 pr-4">Akce</th>
+                                    <th className="py-2 px-2">Jméno</th>
+                                    <th className="py-2 px-2">Kontakt</th>
+                                    <th className="py-2 px-2">Role</th>
+                                    <th className="py-2 px-2">Hlavní kontakt</th>
+                                    <th className="py-2 px-2">Akce</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {client.contacts.map((contact) => (
+                                {client.contacts.map((contact) => {
+                                    const filterText = [
+                                        contact.firstName,
+                                        contact.lastName,
+                                        contact.email,
+                                        contact.phone,
+                                        contact.instagram,
+                                        contact.roleLabel,
+                                        contact.note,
+                                        contact.isPrimary ? 'hlavní ano' : '',
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' ')
+
+                                    return (
                                     <Fragment key={contact.id}>
-                                        <tr>
-                                            <td className="py-3 pr-4 font-medium">
+                                        <tr
+                                            data-filter-item
+                                            data-filter-text={filterText}
+                                        >
+                                            <td className="py-3 px-2 font-medium">
                                                 {contact.firstName} {contact.lastName}
                                             </td>
-                                            <td className="py-3 pr-4">
+                                            <td className="py-3 px-2">
                                                 <div className="grid gap-1">
                                                     <div>
                                                         <span className="text-gray-500">telefon: </span>
@@ -314,13 +420,17 @@ export default async function ClientDetailPage({
                                                         <span className="text-gray-500">email: </span>
                                                         {contact.email ?? '—'}
                                                     </div>
+                                                    <div>
+                                                        <span className="text-gray-500">instagram: </span>
+                                                        {contact.instagram ?? '—'}
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td className="py-3 pr-4">{contact.roleLabel ?? '—'}</td>
-                                            <td className="py-3 pr-4">
+                                            <td className="py-3 px-2">{contact.roleLabel ?? '—'}</td>
+                                            <td className="py-3 px-2">
                                                 {contact.isPrimary ? 'Ano' : '—'}
                                             </td>
-                                            <td className="py-3 pr-4 whitespace-nowrap">
+                                            <td className="py-3 px-2 whitespace-nowrap">
                                                 <Link
                                                     href={`/clients/${client.id}/contacts/${contact.id}/edit`}
                                                     className={compactSecondaryButtonClass}
@@ -329,7 +439,11 @@ export default async function ClientDetailPage({
                                                 </Link>
                                             </td>
                                         </tr>
-                                        <tr className="border-b">
+                                        <tr
+                                            data-filter-item
+                                            data-filter-text={filterText}
+                                            className="border-b"
+                                        >
                                             <td colSpan={5} className="pb-4 pr-4">
                                                 <div className="rounded-md bg-slate-50 px-4 py-3 text-sm">
                                                     <span className="font-medium text-gray-500">
@@ -342,7 +456,8 @@ export default async function ClientDetailPage({
                                             </td>
                                         </tr>
                                     </Fragment>
-                                ))}
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -353,7 +468,11 @@ export default async function ClientDetailPage({
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Přidat kontakt</h2>
 
-                <form action={createContactForClient} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={createContactForClient}
+                    className="mt-4 grid gap-4"
+                    storageKey={`contact-form:new:${client.id}`}
+                >
                     <div className="grid gap-2 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <label htmlFor="firstName" className="font-medium">
@@ -413,6 +532,19 @@ export default async function ClientDetailPage({
                     </div>
 
                     <div className="grid gap-2">
+                        <label htmlFor="instagram" className="font-medium">
+                            Instagram
+                        </label>
+                        <input
+                            id="instagram"
+                            name="instagram"
+                            type="text"
+                            className={inputClass}
+                            placeholder="@instagram_handle"
+                        />
+                    </div>
+
+                    <div className="grid gap-2">
                         <label htmlFor="roleLabel" className="font-medium">
                             Role
                         </label>
@@ -449,7 +581,7 @@ export default async function ClientDetailPage({
                     >
                         Přidat kontakt
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

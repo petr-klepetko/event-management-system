@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import ConfirmSubmitButton from '@/components/forms/ConfirmSubmitButton'
+import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
 import { getServiceCatalogItemsForAdmin } from '@/modules/services/service-catalog.service'
 import { setServiceCatalogItemActiveAction } from './actions'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
@@ -7,7 +8,7 @@ import {
     compactSecondaryButtonClass,
     primaryButtonClass,
 } from '@/lib/ui/styles'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,9 +42,10 @@ function mapSuccessMessage(code?: string) {
 type ServicesTableProps = {
     services: Awaited<ReturnType<typeof getServiceCatalogItemsForAdmin>>
     inactive?: boolean
+    listId: string
 }
 
-function ServicesTable({ services, inactive = false }: ServicesTableProps) {
+function ServicesTable({ services, inactive = false, listId }: ServicesTableProps) {
     if (services.length === 0) {
         return (
             <p className="mt-4 text-sm text-gray-600">
@@ -56,17 +58,41 @@ function ServicesTable({ services, inactive = false }: ServicesTableProps) {
 
     return (
         <>
-        <div className="mt-4 grid gap-4 md:hidden">
+        <ClientSideListFilter
+            listId={listId}
+            placeholder="Hledat podle názvu, ceny nebo popisu..."
+        />
+
+        <p
+            data-filter-empty={listId}
+            hidden
+            className="mt-4 text-sm text-gray-600"
+        >
+            Žádná služba neodpovídá filtru.
+        </p>
+
+        <div data-filter-list={listId} className="mt-4 grid gap-4 md:hidden">
             {services.map((service) => {
                 const toggleService =
                     setServiceCatalogItemActiveAction.bind(null, {
                         serviceId: service.id,
                         isActive: !service.isActive,
                     })
+                const filterText = [
+                    service.name,
+                    service.defaultPrice.toString(),
+                    formatPrice(service.defaultPrice.toString()),
+                    service.description,
+                    service.isActive ? 'aktivní' : 'deaktivovaná',
+                ]
+                    .filter(Boolean)
+                    .join(' ')
 
                 return (
                     <article
                         key={service.id}
+                        data-filter-item
+                        data-filter-text={filterText}
                         className={`rounded-lg border border-slate-200 bg-white p-4 ${
                             inactive ? 'opacity-75' : ''
                         }`}
@@ -116,14 +142,14 @@ function ServicesTable({ services, inactive = false }: ServicesTableProps) {
             })}
         </div>
 
-        <div className="mt-4 hidden overflow-x-auto md:block">
+        <div data-filter-list={listId} className="mt-4 hidden overflow-x-auto md:block">
             <table className="min-w-full border-collapse">
                 <thead>
                     <tr className="border-b text-left">
-                        <th className="py-2 pr-4">Název</th>
-                        <th className="py-2 pr-4">Výchozí cena</th>
-                        <th className="py-2 pr-4">Popis</th>
-                        <th className="py-2 pr-4">Akce</th>
+                        <th className="py-2 px-2">Název</th>
+                        <th className="py-2 px-2">Výchozí cena</th>
+                        <th className="py-2 px-2">Popis</th>
+                        <th className="py-2 px-2">Akce</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -133,24 +159,35 @@ function ServicesTable({ services, inactive = false }: ServicesTableProps) {
                                 serviceId: service.id,
                                 isActive: !service.isActive,
                             })
+                        const filterText = [
+                            service.name,
+                            service.defaultPrice.toString(),
+                            formatPrice(service.defaultPrice.toString()),
+                            service.description,
+                            service.isActive ? 'aktivní' : 'deaktivovaná',
+                        ]
+                            .filter(Boolean)
+                            .join(' ')
 
                         return (
                             <tr
                                 key={service.id}
+                                data-filter-item
+                                data-filter-text={filterText}
                                 className={`border-b ${
                                     inactive ? 'text-gray-400' : ''
                                 }`}
                             >
-                                <td className="py-2 pr-4 font-medium">
+                                <td className="py-2 px-2 font-medium">
                                     {service.name}
                                 </td>
-                                <td className="py-2 pr-4">
+                                <td className="py-2 px-2">
                                     {formatPrice(service.defaultPrice.toString())}
                                 </td>
-                                <td className="py-2 pr-4 whitespace-pre-wrap">
+                                <td className="py-2 px-2 whitespace-pre-wrap">
                                     {service.description ?? '—'}
                                 </td>
-                                <td className="py-2 pr-4">
+                                <td className="py-2 px-2">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Link
                                             href={`/services/${service.id}/edit`}
@@ -188,7 +225,7 @@ export default async function ServicesPage({
     searchParams,
 }: ServicesPageProps) {
     const { error, success } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
     const services = await getServiceCatalogItemsForAdmin(auth)
     const activeServices = services.filter((service) => service.isActive)
     const inactiveServices = services.filter((service) => !service.isActive)
@@ -230,7 +267,7 @@ export default async function ServicesPage({
                     </p>
                 ) : null}
 
-                <ServicesTable services={activeServices} />
+                <ServicesTable services={activeServices} listId="active-services" />
             </section>
 
             <section className="mt-8 rounded-xl border border-gray-700 p-4 sm:p-6">
@@ -238,7 +275,11 @@ export default async function ServicesPage({
                     Deaktivované služby
                 </h2>
 
-                <ServicesTable services={inactiveServices} inactive />
+                <ServicesTable
+                    services={inactiveServices}
+                    inactive
+                    listId="inactive-services"
+                />
             </section>
         </main>
     )

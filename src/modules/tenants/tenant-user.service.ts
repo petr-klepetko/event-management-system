@@ -70,11 +70,24 @@ export async function createTenantInvite(input: {
     }
 
     const token = randomBytes(32).toString('hex')
+    const email = input.email.toLowerCase()
+    const existingUser = await prisma.user.findUnique({
+        where: {
+            email,
+        },
+        select: {
+            id: true,
+        },
+    })
+
+    if (existingUser) {
+        throw new Error('Uživatel s tímto e-mailem už existuje.')
+    }
 
     await prisma.tenantInvite.create({
         data: {
             tenantId,
-            email: input.email.toLowerCase(),
+            email,
             role: input.role,
             tokenHash: hashInviteToken(token),
             invitedByUserId: auth.userId,
@@ -121,20 +134,25 @@ export async function acceptTenantInvite(input: {
         throw new Error('Pozvánka je neplatná nebo expirovaná.')
     }
 
-    const user = await prisma.user.upsert({
+    const existingUser = await prisma.user.findUnique({
         where: {
             email: invite.email,
         },
-        create: {
+        select: {
+            id: true,
+        },
+    })
+
+    if (existingUser) {
+        throw new Error('Uživatel s tímto e-mailem už existuje.')
+    }
+
+    const user = await prisma.user.create({
+        data: {
             email: invite.email,
             fullName: input.fullName,
             passwordHash: hashPassword(input.password),
             role: invite.role === 'WORKER' ? 'WORKER' : 'MANAGER',
-        },
-        update: {
-            fullName: input.fullName,
-            passwordHash: hashPassword(input.password),
-            isActive: true,
         },
     })
 

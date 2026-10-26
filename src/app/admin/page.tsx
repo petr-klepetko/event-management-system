@@ -1,5 +1,7 @@
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
 import ConfirmSubmitButton from '@/components/forms/ConfirmSubmitButton'
+import PersistedForm from '@/components/forms/PersistedForm'
 import {
     compactSecondaryButtonClass,
     inputClass,
@@ -71,7 +73,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Vytvořit tenant</h2>
-                <form action={createTenantAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={createTenantAction}
+                    className="mt-4 grid gap-4"
+                    storageKey="admin-tenant-form:new"
+                >
                     <div className="grid gap-2 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <label htmlFor="tenantName" className="font-medium">
@@ -101,12 +107,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <button type="submit" className={primaryButtonClass}>
                         Vytvořit tenant
                     </button>
-                </form>
+                </PersistedForm>
             </section>
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Vytvořit uživatele</h2>
-                <form action={createAdminUserAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={createAdminUserAction}
+                    className="mt-4 grid gap-4"
+                    storageKey="admin-user-form:new"
+                >
                     <div className="grid gap-2 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <label htmlFor="email" className="font-medium">
@@ -145,6 +155,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 name="password"
                                 type="text"
                                 required
+                                minLength={8}
                                 className={inputClass}
                             />
                         </div>
@@ -216,13 +227,26 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <button type="submit" className={primaryButtonClass}>
                         Vytvořit uživatele
                     </button>
-                </form>
+                </PersistedForm>
             </section>
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Uživatelé</h2>
 
-                <div className="mt-4 grid gap-4 md:hidden">
+                <ClientSideListFilter
+                    listId="admin-users"
+                    placeholder="Hledat podle jména, loginu, role nebo stavu..."
+                />
+
+                <p
+                    data-filter-empty="admin-users"
+                    hidden
+                    className="mt-4 text-sm text-gray-600"
+                >
+                    Žádný uživatel neodpovídá filtru.
+                </p>
+
+                <div data-filter-list="admin-users" className="mt-4 grid gap-4 md:hidden">
                     {overview.users.map((user) => {
                         const toggleActive = setUserActiveAction.bind(null, {
                             userId: user.id,
@@ -231,10 +255,18 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         const resetPassword = resetUserPasswordAction.bind(null, {
                             userId: user.id,
                         })
+                        const filterText = [
+                            user.fullName,
+                            user.email,
+                            user.role,
+                            user.isActive ? 'aktivní' : 'vypnutý',
+                        ].join(' ')
 
                         return (
                             <article
                                 key={user.id}
+                                data-filter-item
+                                data-filter-text={filterText}
                                 className="rounded-lg border border-slate-200 bg-white p-4"
                             >
                                 <div>
@@ -272,7 +304,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                             name="password"
                                             type="text"
                                             required
-                                            minLength={4}
+                                            minLength={8}
                                             className={inputClass}
                                             placeholder="Nové heslo"
                                         />
@@ -302,16 +334,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     })}
                 </div>
 
-                <div className="mt-4 hidden overflow-x-auto md:block">
+                <div data-filter-list="admin-users" className="mt-4 hidden overflow-x-auto md:block">
                     <table className="min-w-full border-collapse">
                         <thead>
                             <tr className="border-b text-left">
-                                <th className="py-2 pr-4">Jméno</th>
-                                <th className="py-2 pr-4">Login</th>
-                                <th className="py-2 pr-4">Role</th>
-                                <th className="py-2 pr-4">Stav</th>
-                                <th className="py-2 pr-4">Reset hesla</th>
-                                <th className="py-2 pr-4">Akce</th>
+                                <th className="py-2 px-2">Jméno</th>
+                                <th className="py-2 px-2">Login</th>
+                                <th className="py-2 px-2">Role</th>
+                                <th className="py-2 px-2">Stav</th>
+                                <th className="py-2 px-2">Reset hesla</th>
+                                <th className="py-2 px-2">Akce</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -324,22 +356,33 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                     resetUserPasswordAction.bind(null, {
                                         userId: user.id,
                                     })
+                                const filterText = [
+                                    user.fullName,
+                                    user.email,
+                                    user.role,
+                                    user.isActive ? 'aktivní' : 'vypnutý',
+                                ].join(' ')
 
                                 return (
-                                    <tr key={user.id} className="border-b">
-                                        <td className="py-2 pr-4">
+                                    <tr
+                                        key={user.id}
+                                        data-filter-item
+                                        data-filter-text={filterText}
+                                        className="border-b"
+                                    >
+                                        <td className="py-2 px-2">
                                             {user.fullName}
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             {user.email}
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             {user.role}
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             {user.isActive ? 'Aktivní' : 'Vypnutý'}
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             <form
                                                 action={resetPassword}
                                                 className="flex items-center gap-2"
@@ -348,7 +391,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                                     name="password"
                                                     type="text"
                                                     required
-                                                    minLength={4}
+                                                    minLength={8}
                                                     className={inputClass}
                                                     placeholder="Nové heslo"
                                                 />
@@ -360,7 +403,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                                 </button>
                                             </form>
                                         </td>
-                                        <td className="py-2 pr-4">
+                                        <td className="py-2 px-2">
                                             <form action={toggleActive}>
                                                 <ConfirmSubmitButton
                                                     confirmMessage={
@@ -387,10 +430,25 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Tenanty</h2>
 
-                <div className="mt-4 grid gap-4 md:hidden">
+                <ClientSideListFilter
+                    listId="admin-tenants"
+                    placeholder="Hledat podle názvu nebo slugu..."
+                />
+
+                <p
+                    data-filter-empty="admin-tenants"
+                    hidden
+                    className="mt-4 text-sm text-gray-600"
+                >
+                    Žádný tenant neodpovídá filtru.
+                </p>
+
+                <div data-filter-list="admin-tenants" className="mt-4 grid gap-4 md:hidden">
                     {overview.tenants.map((tenant) => (
                         <article
                             key={tenant.id}
+                            data-filter-item
+                            data-filter-text={`${tenant.name} ${tenant.slug}`}
                             className="rounded-lg border border-slate-200 bg-white p-4"
                         >
                             <h3 className="text-base font-semibold">{tenant.name}</h3>
@@ -415,21 +473,26 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     ))}
                 </div>
 
-                <div className="mt-4 hidden overflow-x-auto md:block">
+                <div data-filter-list="admin-tenants" className="mt-4 hidden overflow-x-auto md:block">
                     <table className="min-w-full border-collapse">
                         <thead>
                             <tr className="border-b text-left">
-                                <th className="py-2 pr-4">Název</th>
-                                <th className="py-2 pr-4">Slug</th>
-                                <th className="py-2 pr-4">Vytvořeno</th>
+                                <th className="py-2 px-2">Název</th>
+                                <th className="py-2 px-2">Slug</th>
+                                <th className="py-2 px-2">Vytvořeno</th>
                             </tr>
                         </thead>
                         <tbody>
                             {overview.tenants.map((tenant) => (
-                                <tr key={tenant.id} className="border-b">
-                                    <td className="py-2 pr-4">{tenant.name}</td>
-                                    <td className="py-2 pr-4">{tenant.slug}</td>
-                                    <td className="py-2 pr-4">
+                                <tr
+                                    key={tenant.id}
+                                    data-filter-item
+                                    data-filter-text={`${tenant.name} ${tenant.slug}`}
+                                    className="border-b"
+                                >
+                                    <td className="py-2 px-2">{tenant.name}</td>
+                                    <td className="py-2 px-2">{tenant.slug}</td>
+                                    <td className="py-2 px-2">
                                         {new Intl.DateTimeFormat('cs-CZ', {
                                             dateStyle: 'medium',
                                             timeStyle: 'short',

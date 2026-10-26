@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { TenantRole, UserRole } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 import { getSessionUserByToken, isAppAdmin } from '@/modules/auth/auth.service'
 import { sessionCookieName } from './constants'
 
@@ -66,6 +67,20 @@ export async function requireAdminContext() {
     return auth
 }
 
+export async function requireTenantManagerContext() {
+    const auth = await requireAuthContext()
+
+    if (!auth.isAdmin && auth.tenantRole === 'WORKER') {
+        redirect('/')
+    }
+
+    return auth
+}
+
+export function isWorkerContext(auth: AuthContext) {
+    return !auth.isAdmin && auth.tenantRole === 'WORKER'
+}
+
 export function getTenantScopedWhere(auth: AuthContext) {
     if (auth.isAdmin) {
         return {}
@@ -87,4 +102,42 @@ export function getTenantScopedWhere(auth: AuthContext) {
     return {
         tenantId: auth.tenantId,
     }
+}
+
+export function getEventScopedWhere(auth: AuthContext): Prisma.EventWhereInput {
+    if (auth.isAdmin) {
+        return {}
+    }
+
+    if (!auth.tenantId) {
+        return {
+            id: '__no_tenant_access__',
+        }
+    }
+
+    if (auth.tenantRole === 'WORKER') {
+        return {
+            tenantId: auth.tenantId,
+            serviceItems: {
+                some: {
+                    assignments: {
+                        some: {
+                            userId: auth.userId,
+                        },
+                    },
+                },
+            },
+        }
+    }
+
+    return {
+        tenantId: auth.tenantId,
+    }
+}
+
+export function canManageOwnedTenantData(
+    auth: AuthContext,
+    ownerUserId: string | null
+) {
+    return auth.isAdmin || auth.tenantRole !== 'WORKER' || ownerUserId === auth.userId
 }

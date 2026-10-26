@@ -1,10 +1,13 @@
 import { notFound } from 'next/navigation'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
-import { getServiceCatalogItemsForEventTenant } from '@/modules/event-services/event-service.service'
+import {
+    getAssignableUsersForEvent,
+    getServiceCatalogItemsForEventTenant,
+} from '@/modules/event-services/event-service.service'
 import { getEventById } from '@/modules/events/event.service'
 import { createEventServiceItemAction } from '../../actions'
 import AddServiceForm from '../../AddServiceForm'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { canManageOwnedTenantData, requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type NewEventServiceItemPageProps = {
     params: Promise<{
@@ -21,14 +24,19 @@ export default async function NewEventServiceItemPage({
 }: NewEventServiceItemPageProps) {
     const { id: eventId } = await params
     const { error } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
 
-    const [event, serviceCatalogItems] = await Promise.all([
+    const [event, serviceCatalogItems, assignableUsers] = await Promise.all([
         getEventById(eventId, auth),
         getServiceCatalogItemsForEventTenant(eventId, auth),
+        getAssignableUsersForEvent(eventId, auth),
     ])
 
     if (!event) {
+        notFound()
+    }
+
+    if (!canManageOwnedTenantData(auth, event.ownerUserId)) {
         notFound()
     }
 
@@ -41,7 +49,7 @@ export default async function NewEventServiceItemPage({
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
-                    { label: 'Akce', href: '/events' },
+                    { label: 'Akce a události', href: '/events' },
                     { label: event.title, href: `/events/${event.id}` },
                     {
                         label: 'Přidat službu',
@@ -73,6 +81,7 @@ export default async function NewEventServiceItemPage({
                         defaultPrice: item.defaultPrice.toString(),
                         defaultDescription: item.description ?? '',
                     }))}
+                    assignableUsers={assignableUsers}
                     action={createServiceForEvent}
                 />
             </section>

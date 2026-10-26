@@ -1,12 +1,16 @@
 import { notFound } from 'next/navigation'
 import {
+    getAssignableUsersForTenant,
     getEventServiceItemById,
     getServiceCatalogItemsForEventServiceEdit,
 } from '@/modules/event-services/event-service.service'
 import { updateEventServiceItemAction } from './actions'
-import { buttonClass, inputClass, optionClass } from '@/lib/ui/styles'
+import EventServiceAssignmentsEditor from '@/components/forms/EventServiceAssignmentsEditor'
+import PersistedForm from '@/components/forms/PersistedForm'
+import SearchableSelect from '@/components/forms/SearchableSelect'
+import { buttonClass, inputClass } from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type EditEventServiceItemPageProps = {
     params: Promise<{
@@ -33,7 +37,7 @@ export default async function EditEventServiceItemPage({
 }: EditEventServiceItemPageProps) {
     const { id: eventId, serviceItemId } = await params
     const { error } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
 
     const serviceItem = await getEventServiceItemById(serviceItemId, auth)
 
@@ -45,22 +49,26 @@ export default async function EditEventServiceItemPage({
         notFound()
     }
 
-    const serviceCatalogItems = await getServiceCatalogItemsForEventServiceEdit(
-        serviceItem.serviceCatalogItemId,
-        serviceItem.event.tenantId
-    )
+    const [serviceCatalogItems, assignableUsers] = await Promise.all([
+        getServiceCatalogItemsForEventServiceEdit(
+            serviceItem.serviceCatalogItemId,
+            serviceItem.event.tenantId
+        ),
+        getAssignableUsersForTenant(serviceItem.event.tenantId, auth),
+    ])
 
     const updateAction = updateEventServiceItemAction.bind(null, {
         eventId,
         serviceItemId,
     })
+    const formPersistenceKey = `event-service-form:edit:${serviceItemId}`
 
     return (
         <main className="mx-auto max-w-4xl p-8">
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
-                    { label: 'Akce', href: '/events' },
+                    { label: 'Akce a události', href: '/events' },
                     {
                         label: serviceItem.event.title,
                         href: `/events/${eventId}`,
@@ -88,27 +96,31 @@ export default async function EditEventServiceItemPage({
                     </p>
                 ) : null}
 
-                <form action={updateAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={updateAction}
+                    className="mt-4 grid gap-4"
+                    storageKey={formPersistenceKey}
+                >
                     <div className="grid gap-2">
                         <label htmlFor="serviceCatalogItemId" className="font-medium">
                             Služba z katalogu
                         </label>
-                        <select
+                        <SearchableSelect
                             id="serviceCatalogItemId"
                             name="serviceCatalogItemId"
                             defaultValue={serviceItem.serviceCatalogItemId ?? ''}
-                            className={inputClass}
-                        >
-                            <option className={optionClass} value="">
-                                Bez vybrané katalogové služby
-                            </option>
-                            {serviceCatalogItems.map((item) => (
-                                <option className={optionClass} key={item.id} value={item.id}>
-                                    {item.name} ({formatPrice(item.defaultPrice.toString())})
-                                    {item.isActive ? '' : ' - deaktivovaná'}
-                                </option>
-                            ))}
-                        </select>
+                            placeholder="Začni psát název služby..."
+                            emptyOptionLabel="Bez vybrané katalogové služby"
+                            options={serviceCatalogItems.map((item) => ({
+                                value: item.id,
+                                label: `${item.name} (${formatPrice(item.defaultPrice.toString())})${
+                                    item.isActive ? '' : ' - deaktivovaná'
+                                }`,
+                                searchText: `${item.name} ${item.defaultPrice.toString()} ${
+                                    item.description ?? ''
+                                } ${item.isActive ? 'aktivní' : 'deaktivovaná'}`,
+                            }))}
+                        />
                     </div>
 
                     <div className="grid gap-2 sm:grid-cols-2">
@@ -167,10 +179,25 @@ export default async function EditEventServiceItemPage({
                         />
                     </div>
 
+                    <EventServiceAssignmentsEditor
+                        users={assignableUsers}
+                        persistenceKey={formPersistenceKey}
+                        defaultAssignments={serviceItem.assignments.map(
+                            (assignment) => ({
+                                id: assignment.id,
+                                userId: assignment.userId,
+                                supplierName: assignment.supplierName,
+                                role: assignment.role,
+                                workDescription: assignment.workDescription,
+                                reward: assignment.reward.toString(),
+                            })
+                        )}
+                    />
+
                     <button type="submit" className={buttonClass}>
                         Uložit změny
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )

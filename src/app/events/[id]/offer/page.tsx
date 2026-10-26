@@ -5,7 +5,8 @@ import PrintButton from '@/components/print/PrintButton'
 import { primaryButtonClass, secondaryButtonClass } from '@/lib/ui/styles'
 import { getEventById } from '@/modules/events/event.service'
 import { mapEventStatusToLabel } from '@/modules/events/event.utils'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { canManageOwnedTenantData, requireTenantManagerContext } from '@/lib/auth/current-user'
+import OfferServicesTable from './OfferServicesTable'
 
 type EventOfferPageProps = {
     params: Promise<{
@@ -35,12 +36,25 @@ function formatPrice(value: string | number) {
     }).format(amount)
 }
 
+function getOfferClientName(event: {
+    client: {
+        name: string
+    } | null
+    oneOffClientName: string | null
+}) {
+    return event.client?.name ?? event.oneOffClientName ?? '—'
+}
+
 export default async function EventOfferPage({ params }: EventOfferPageProps) {
     const { id } = await params
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
     const event = await getEventById(id, auth)
 
     if (!event) {
+        notFound()
+    }
+
+    if (!canManageOwnedTenantData(auth, event.ownerUserId)) {
         notFound()
     }
 
@@ -48,6 +62,12 @@ export default async function EventOfferPage({ params }: EventOfferPageProps) {
         (sum, item) => sum + Number(item.price.toString()),
         0
     )
+    const offerServiceItems = event.serviceItems.map((item) => ({
+        id: item.id,
+        name: item.customName,
+        description: item.description ?? '—',
+        price: formatPrice(item.price.toString()),
+    }))
 
     return (
         <main className="mx-auto max-w-5xl p-8 print-preview-page">
@@ -55,7 +75,7 @@ export default async function EventOfferPage({ params }: EventOfferPageProps) {
                 <Breadcrumbs
                     items={[
                         { label: 'Domů', href: '/' },
-                        { label: 'Akce', href: '/events' },
+                        { label: 'Akce a události', href: '/events' },
                         { label: event.title, href: `/events/${event.id}` },
                         {
                             label: 'Nabídka',
@@ -126,31 +146,44 @@ export default async function EventOfferPage({ params }: EventOfferPageProps) {
                         <dl className="offer-grid">
                             <div>
                                 <dt>Název</dt>
-                                <dd>{event.client.name}</dd>
+                                <dd>{getOfferClientName(event)}</dd>
                             </div>
-                            <div>
-                                <dt>IČO</dt>
-                                <dd>{event.client.ico ?? '—'}</dd>
-                            </div>
-                            <div>
-                                <dt>DIČ</dt>
-                                <dd>{event.client.dic ?? '—'}</dd>
-                            </div>
-                            <div>
-                                <dt>Město</dt>
-                                <dd>{event.client.city ?? '—'}</dd>
-                            </div>
-                            <div>
-                                <dt>Kontakt</dt>
-                                <dd>
-                                    {event.primaryContact
-                                        ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
-                                        : '—'}
-                                </dd>
-                            </div>
+                            {event.client ? (
+                                <>
+                                    <div>
+                                        <dt>IČO</dt>
+                                        <dd>{event.client.ico ?? '—'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>DIČ</dt>
+                                        <dd>{event.client.dic ?? '—'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Město</dt>
+                                        <dd>{event.client.city ?? '—'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Kontakt</dt>
+                                        <dd>
+                                            {event.primaryContact
+                                                ? `${event.primaryContact.firstName} ${event.primaryContact.lastName}`
+                                                : '—'}
+                                        </dd>
+                                    </div>
+                                </>
+                            ) : (
+                                <div>
+                                    <dt>Telefon</dt>
+                                    <dd>{event.oneOffClientPhone ?? '—'}</dd>
+                                </div>
+                            )}
                             <div>
                                 <dt>Email</dt>
-                                <dd>{event.primaryContact?.email ?? '—'}</dd>
+                                <dd>
+                                    {event.client
+                                        ? event.primaryContact?.email ?? '—'
+                                        : event.oneOffClientEmail ?? '—'}
+                                </dd>
                             </div>
                         </dl>
                     </section>
@@ -159,36 +192,11 @@ export default async function EventOfferPage({ params }: EventOfferPageProps) {
                 <section className="offer-section">
                     <h3>Nabízené služby</h3>
 
-                    {event.serviceItems.length === 0 ? (
-                        <p className="offer-empty">
-                            K této akci zatím nejsou přidané žádné služby.
-                        </p>
-                    ) : (
-                        <table className="offer-table">
-                            <thead>
-                                <tr>
-                                    <th>Služba</th>
-                                    <th>Popis</th>
-                                    <th>Cena</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {event.serviceItems.map((item) => (
-                                    <tr key={item.id}>
-                                        <td>{item.customName}</td>
-                                        <td>{item.description ?? '—'}</td>
-                                        <td>{formatPrice(item.price.toString())}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colSpan={2}>Celkem</td>
-                                    <td>{formatPrice(totalPrice)}</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    )}
+                    <OfferServicesTable
+                        items={offerServiceItems}
+                        totalPrice={formatPrice(totalPrice)}
+                        hideItemPrices={event.hideOfferItemPrices}
+                    />
                 </section>
 
                 <footer className="offer-footer">

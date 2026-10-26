@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import EventClientFields from '@/components/forms/EventClientFields'
+import PersistedForm from '@/components/forms/PersistedForm'
 import {
     buttonClass,
     inputClass,
@@ -8,7 +10,7 @@ import {
 import { getEventById, getEventFormOptions } from '@/modules/events/event.service'
 import { eventStatusOptions } from '@/modules/events/event.utils'
 import { updateEventAction } from '../../actions'
-import { requireAuthContext } from '@/lib/auth/current-user'
+import { canManageOwnedTenantData, requireTenantManagerContext } from '@/lib/auth/current-user'
 
 type EditEventPageProps = {
     params: Promise<{
@@ -32,7 +34,7 @@ export default async function EditEventPage({
 }: EditEventPageProps) {
     const { id } = await params
     const { error } = await searchParams
-    const auth = await requireAuthContext()
+    const auth = await requireTenantManagerContext()
 
     const [event, formOptions] = await Promise.all([
         getEventById(id, auth),
@@ -43,16 +45,21 @@ export default async function EditEventPage({
         notFound()
     }
 
+    if (!canManageOwnedTenantData(auth, event.ownerUserId)) {
+        notFound()
+    }
+
     const updateAction = updateEventAction.bind(null, {
         eventId: event.id,
     })
+    const formPersistenceKey = `event-form:edit:${event.id}`
 
     return (
         <main className="mx-auto max-w-4xl p-8">
             <Breadcrumbs
                 items={[
                     { label: 'Domů', href: '/' },
-                    { label: 'Akce', href: '/events' },
+                    { label: 'Akce a události', href: '/events' },
                     { label: event.title, href: `/events/${event.id}` },
                     { label: 'Upravit akci', href: `/events/${event.id}/edit` },
                 ]}
@@ -71,7 +78,11 @@ export default async function EditEventPage({
                     </p>
                 ) : null}
 
-                <form action={updateAction} className="mt-4 grid gap-4">
+                <PersistedForm
+                    action={updateAction}
+                    className="mt-4 grid gap-4"
+                    storageKey={formPersistenceKey}
+                >
                     <div className="grid gap-2">
                         <label htmlFor="title" className="font-medium">
                             Název
@@ -153,59 +164,17 @@ export default async function EditEventPage({
                         </div>
                     </div>
 
-                    <div className="grid gap-2 sm:grid-cols-2">
-                        <div className="grid gap-2">
-                            <label htmlFor="clientId" className="font-medium">
-                                Klient
-                            </label>
-                            <select
-                                id="clientId"
-                                name="clientId"
-                                required
-                                defaultValue={event.clientId}
-                                className={inputClass}
-                            >
-                                {formOptions.clients.map((client) => (
-                                    <option
-                                        className={optionClass}
-                                        key={client.id}
-                                        value={client.id}
-                                    >
-                                        {client.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="grid gap-2">
-                            <label
-                                htmlFor="primaryContactId"
-                                className="font-medium"
-                            >
-                                Hlavní kontakt
-                            </label>
-                            <select
-                                id="primaryContactId"
-                                name="primaryContactId"
-                                defaultValue={event.primaryContactId ?? ''}
-                                className={inputClass}
-                            >
-                                <option className={optionClass} value="">
-                                    Bez vybraného kontaktu
-                                </option>
-                                {formOptions.contacts.map((contact) => (
-                                    <option
-                                        className={optionClass}
-                                        key={contact.id}
-                                        value={contact.id}
-                                    >
-                                        {contact.firstName} {contact.lastName} (
-                                        {contact.client.name})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
+                    <EventClientFields
+                        clients={formOptions.clients}
+                        contacts={formOptions.contacts}
+                        defaultClientMode={event.clientId ? 'REGULAR' : 'ONE_OFF'}
+                        defaultClientId={event.clientId}
+                        defaultPrimaryContactId={event.primaryContactId}
+                        defaultOneOffClientName={event.oneOffClientName}
+                        defaultOneOffClientPhone={event.oneOffClientPhone}
+                        defaultOneOffClientEmail={event.oneOffClientEmail}
+                        persistenceKey={formPersistenceKey}
+                    />
 
                     <div className="grid gap-2">
                         <label htmlFor="internalNote" className="font-medium">
@@ -220,10 +189,28 @@ export default async function EditEventPage({
                         />
                     </div>
 
+                    <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <input
+                            name="hideOfferItemPrices"
+                            type="checkbox"
+                            defaultChecked={event.hideOfferItemPrices}
+                            className="mt-1"
+                        />
+                        <span>
+                            <span className="block font-medium">
+                                Skrýt ceny jednotlivých položek v nabídce
+                            </span>
+                            <span className="mt-1 block text-sm text-gray-600">
+                                V PDF nabídce zůstane vidět celková cena, ale u služeb se
+                                nezobrazí ceny po položkách.
+                            </span>
+                        </span>
+                    </label>
+
                     <button type="submit" className={buttonClass}>
                         Uložit změny
                     </button>
-                </form>
+                </PersistedForm>
             </section>
         </main>
     )
