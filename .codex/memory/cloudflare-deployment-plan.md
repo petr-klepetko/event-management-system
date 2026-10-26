@@ -1,9 +1,22 @@
 # Plán nasazení na Cloudflare
 
-Aktualizováno: 22. 10. 2026
+Aktualizováno: 27. 10. 2026
 
-Stav: návrh; konfigurace ani nasazení na Cloudflare zatím nebyly provedeny.
+Stav: příprava lokálně; konfigurace vinext vznikla, nasazení na Cloudflare zatím neproběhlo.
 Uživatel požádal o uložení plánu do projektové paměti. Tento dokument není pokyn k okamžitému nasazení, změně databáze ani pushi.
+
+Rozhodnutí 26. 10. 2026: klient bude aktuální aplikaci používat jako produkční provoz a hlásit chyby. Cloudflare Access zůstane vypnutý; přihlášení řeší aplikace. Uživatel chce využít stávající Neon databázi a oddělit klientská data novým tenantem; testovací data ponechat v jiném tenantovi. Před zpřístupněním ověřit, že klientské účty nemají globální roli `ADMIN` a nemají členství v testovacím tenantovi.
+
+Průběh 26. 10. 2026: uživatel spustil `vinext init` pro Cloudflare bez cache, optimalizace obrázků a předvykreslení. Vznikly `vite.config.ts`, `cloudflare.config.ts`, skripty a závislosti; změny jsou zatím pouze lokální. Node byl aktualizován na 24.22.1. Po doplnění `DATABASE_URL: bindings.secret()` a změně importu na `@prisma/client/edge` prošly `npm run build:vinext`, `npm run build` a cílený ESLint změněného souboru. Lokální Worker v `vite preview` vrací `/login` 200 a `/setup` 307 na `/login`: databázový dotaz na počet uživatelů tedy prošel. Před změnou importu `/setup` vracel 500 kvůli dynamické kompilaci Query Compiler WASM. Kompletní lint po vygenerování Cloudflare výstupu běžel neúměrně dlouho a byl přerušen; doplnit ignorování generovaných složek před opakováním. `npm audit --omit=dev` hlásí 20 upozornění v produkčním stromu včetně kritického u Next.js 16.2.4; audit navrhuje 16.4.3. Před zpřístupněním klientům ověřit opravu a znovu otestovat build i runtime. Automatické `npm audit fix --force` nebylo spuštěno.
+
+Ověření 27. 10. 2026: uživatel aktualizoval `next` a `eslint-config-next` na 16.4.3. `npm run build:vinext` prošel. Výchozí `npm run build` na Turbopacku opakovaně skončil interní chybou při zpracování `globals.css` (proces PostCSS skončil s kódem 0 před připojením), ale `npx next build --webpack` prošel včetně TypeScriptu. Lokální Cloudflare preview po aktualizaci vrátilo `/login` 200 a `/setup` 307 na `/login`; databázový dotaz funguje. `npm audit --omit=dev` nyní hlásí 17 upozornění: 0 kritických, 8 vysokých, 9 středních. Vysoké se týkají převážně závislostí build a vývojových nástrojů (`prisma`, `vite`, jejich tranzitivní balíčky), nikoli přímého nálezu v aplikaci; před veřejným provozem posoudit skutečnou dosažitelnost a bezpečně opravit dostupné aktualizace. Žádný automatický audit fix nebyl spuštěn. Kompletní ESLint po aktualizaci opět běžel neúměrně dlouho a byl přerušen.
+
+Další ověření 27. 10. 2026: uživatel spustil `npm audit fix` bez `--force`; zůstalo 5 středních upozornění v řetězci `fflate → satori → @vercel/og → vinext`. Vynucená oprava by podle npm vrátila vinext na 0.2.1 a nebyla použita. `npm run build:vinext` po aktualizaci prošel a lokální preview vrátilo `/login` 200 a `/setup` 307; připojení k databázi tedy dále funguje. Audit fix aktualizoval `prisma` CLI na 7.10.1, ale `@prisma/client` a `@prisma/adapter-pg` zůstaly na 7.7.0. Před čistým CI buildem verze sladit a výslovně spustit `prisma generate`; lokální sestavení mohlo použít dříve vygenerovaný klient.
+
+Následně uživatel nainstaloval `prisma`, `@prisma/client` a `@prisma/adapter-pg` ve shodné verzi 7.10.1; `npm ls --depth=0` soulad potvrdil. Audit stále hlásí 5 středních upozornění. Zbývá výslovně spustit `npx prisma generate`, znovu ověřit build a lokální Worker po regenerování klienta. Upozornění npm na nepovolené instalační skripty (`@prisma/engines`, `prisma`, `unrs-resolver`, `workerd`) zůstává; pokud generování či čistá instalace selže kvůli chybějícím binárním součástem, řešit konkrétní skript podle chyby.
+
+Uživatel následně spustil `npx prisma generate`; Prisma Client 7.10.1 se úspěšně vygeneroval. Po regenerování prošel `npm run build:vinext` a lokální Workers preview vrátilo `/login` 200 a `/setup` 307 na `/login` (DB dotaz prošel). Změny konfigurace a závislostí jsou stále pouze v pracovním stromu větve `users`; Cloudflare přes GitHub je neuvidí, dokud je uživatel necommitne a neodešle. Zbývá připravit opakovatelný čistý CI build s `prisma generate`, ověřit autentizaci a tenant oprávnění v reálném Workers, vyřešit sdílený rate limit a nastavit správný build/deploy příkaz i produkční větev v Cloudflare.
+Kontrola vygenerovaného `.cloudflare/output/v0` nenalezla doslovný obsah lokálního `DATABASE_URL` v žádném souboru; tato kontrola nezastupuje prověření celého procesu buildu a logů v CI.
 
 ## Cíl a výchozí stav
 
@@ -13,12 +26,14 @@ Ověřeno v repozitáři a historii práce k datu výše:
 
 - GitHub: https://github.com/petr-klepetko/event-management-system
 - Lokální kořen repozitáře: `C:\Users\klepe\workspace-personal\event-management-system\event-management-system`.
-- Aktivní větev `users`, HEAD `f3ea453`. Dva commity (`6bc70e1`, `f3ea453`) nebyly při kontrole na vzdálené větvi `users`; vzdálený stav byl ověřen přes `git ls-remote`.
-- Next.js 16.2.4, React 19, Prisma 7, `@prisma/adapter-pg` a `pg` 8.20.0 dle `package.json`.
+- Aktivní větev `users`, HEAD `a0a2e92`; při kontrole odpovídala `origin/users`. Commit obsahuje tento plán a odkaz z `AGENTS.md`.
+- Next.js 16.4.3, React 19, Prisma 7, `@prisma/adapter-pg` a `pg` dle `package.json`.
 - Aplikace používá Server Components, Server Actions, databázové relace uživatelů a middleware pro přesměrování na přihlášení.
 - `src/lib/db/prisma.ts` vytváří Prisma klienta s PostgreSQL adaptérem a čte `DATABASE_URL`.
-- Zatím není konfigurace Wrangleru, Cloudflare build ani potvrzená veřejná URL aplikace.
-- Předchozí lint/build prošly podle historie práce. Aktuální běh ve Workers dosud nebyl ověřen.
+- Wrangler konfigurace není; lokálně vznikla nová konfigurace `cloudflare.config.ts` pro `cf`. Cloudflare build ani veřejná URL zatím nejsou potvrzeny.
+- `npm run lint` prošel 26. 10. 2026 před vytvořením generovaných Cloudflare souborů. Vinext build a lokální Workers preview s databázovým čtením prošly 27. 10. 2026; skutečný běh v nasazeném Workers dosud nebyl ověřen.
+- `vinext check` 26. 10. 2026 nahlásil 100 % kompatibilitu (11 podporovaných položek, 0 problémů). Jde o statickou kontrolu; skutečné připojení k Neonu, autentizace a Server Actions vyžadují test běhu.
+- Na tomto počítači přístup k npm registru mimo sandbox funguje s `NODE_OPTIONS=--use-system-ca`; bez systémové CA končí ověření certifikátu chybou. Nevypínat kontrolu TLS.
 - Migrace pro kalendářové události byla podle historie aplikována na Neon. Před nasazením ověřit skutečný stav zvoleného cíle.
 
 ## Technická cesta
@@ -31,11 +46,11 @@ Workers podporují běh serverové části aplikace a PostgreSQL připojení př
 
 ### 1. Potvrdit cílové prostředí a prověřit kompatibilitu
 
-- [ ] Znovu načíst `AGENTS.md`, projektový skill, Git status a relevantní diff; zachovat případnou novější práci.
+- [x] Znovu načíst `AGENTS.md`, projektový skill, Git status a relevantní diff; zachovat případnou novější práci. Ověřeno 26. 10. 2026.
 - [ ] Zvolit Cloudflare účet, název Workeru a testovací prostředí. Přihlášení řešit přes podporovaný přihlašovací postup, žádné tokeny neukládat do tohoto dokumentu.
 - [ ] Pro testovací prostředí určit samostatnou Neon databázi nebo větev. Preview sestavení nesmějí automaticky dostat produkční přístupové údaje.
 - [ ] Ověřit aktuální dokumentaci, podporované verze a limity Cloudflare plánu, zejména velikost sestavení a CPU při přihlášení.
-- [ ] Spustit kontrolu kompatibility vinext (`npx vinext check`) a vyhodnotit Server Actions, cookies, middleware, Prisma a Node.js crypto.
+- [x] Spustit kontrolu kompatibility vinext (`npx vinext check`). Statická kontrola 26. 10. 2026: 100 % kompatibilita. Server Actions, cookies, middleware, Prisma a Node.js crypto ještě ověřit za běhu ve Workers.
 - [ ] Zaznamenat vybranou cestu a verze závislostí. U nových produkčních závislostí dodržet schvalování podle `AGENTS.md` a aktuálního zadání.
 
 ### 2. Připravit sestavení a lokální ověření Workers
