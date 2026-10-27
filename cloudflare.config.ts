@@ -3,7 +3,7 @@ import { bindings, defineConfig, defineWorker } from "cf/config";
 export default defineConfig({
   worker: defineWorker({
     name: "event-management-system",
-    entrypoint: "vinext/server/fetch-handler",
+    entrypoint: "./src/worker.ts",
     compatibilityDate: "2026-10-26",
     compatibilityFlags: ["nodejs_compat"],
     assets: {

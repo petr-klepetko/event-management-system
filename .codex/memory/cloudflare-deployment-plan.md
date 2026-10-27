@@ -2,7 +2,7 @@
 
 Aktualizováno: 27. 10. 2026
 
-Stav: příprava lokálně; konfigurace vinext vznikla, nasazení na Cloudflare zatím neproběhlo.
+Stav: Worker `event-management-system` je ručně nasazený na `https://event-management-system.klepetkope.workers.dev`, ale produkční provoz blokují chyby 1101/500 při databázových požadavcích. Oprava životního cyklu Prisma klienta je zatím pouze v lokálním pracovním stromu; veřejný Worker stále běží se starou verzí.
 Uživatel požádal o uložení plánu do projektové paměti. Tento dokument není pokyn k okamžitému nasazení, změně databáze ani pushi.
 
 Rozhodnutí 26. 10. 2026: klient bude aktuální aplikaci používat jako produkční provoz a hlásit chyby. Cloudflare Access zůstane vypnutý; přihlášení řeší aplikace. Uživatel chce využít stávající Neon databázi a oddělit klientská data novým tenantem; testovací data ponechat v jiném tenantovi. Před zpřístupněním ověřit, že klientské účty nemají globální roli `ADMIN` a nemají členství v testovacím tenantovi.
@@ -17,6 +17,10 @@ Následně uživatel nainstaloval `prisma`, `@prisma/client` a `@prisma/adapter-
 
 Uživatel následně spustil `npx prisma generate`; Prisma Client 7.10.1 se úspěšně vygeneroval. Po regenerování prošel `npm run build:vinext` a lokální Workers preview vrátilo `/login` 200 a `/setup` 307 na `/login` (DB dotaz prošel). Změny konfigurace a závislostí jsou stále pouze v pracovním stromu větve `users`; Cloudflare přes GitHub je neuvidí, dokud je uživatel necommitne a neodešle. Zbývá připravit opakovatelný čistý CI build s `prisma generate`, ověřit autentizaci a tenant oprávnění v reálném Workers, vyřešit sdílený rate limit a nastavit správný build/deploy příkaz i produkční větev v Cloudflare.
 Kontrola vygenerovaného `.cloudflare/output/v0` nenalezla doslovný obsah lokálního `DATABASE_URL` v žádném souboru; tato kontrola nezastupuje prověření celého procesu buildu a logů v CI.
+
+Aktuální stav 27. 10. 2026: větev `users` byla přes PR #2 sloučena do `main`. Uživatel ručně nasadil Worker verzí `d65d53bf-b1e6-4775-8c83-7e7e31aa229b` a nastavil produkční `DATABASE_URL` jako secret. GitHub build v Cloudflare hlásí starší neúspěšný pokus kvůli konfliktu lokální a dashboard konfigurace; ruční deploy je Ready. Ve veřejném Workeru `/setup` někdy vracel 1101 a POST `/login` 500. Live log ukázal zrušený požadavek, protože kód visel bez odpovědi. Pravděpodobná příčina je sdílený globální Prisma klient/pool mezi různými Workers požadavky. Lokální oprava zavádí Prisma klienta na každý požadavek, zavření po dokončení odpovědi a vlastní Worker entrypoint. `npm run build:vinext`, `npx tsc --noEmit`, `npx next build --webpack` a cílený ESLint změněných zdrojových souborů prošly; lokální preview opakovaně vrátilo `/setup` 307 a `/login` 200. Oprava ještě nebyla nasazena ani ověřena v produkčním Workeru. První pokus o Next build v sandboxu skončil na `EPERM` při tvorbě `.next/static/chunks/app/events/[id]`; opakování mimo sandbox prošlo.
+
+Následující výchozí stav a nezaškrtnuté body jsou původní plán. U již provedených kroků platí aktuální stav výše; po ověření veřejného Workeru plán sjednotit.
 
 ## Cíl a výchozí stav
 
