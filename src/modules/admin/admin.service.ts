@@ -89,6 +89,114 @@ export async function createAdminManagedUser(input: {
     return user
 }
 
+export async function transferUserToTenant(input: {
+    userId: string
+    tenantId: string
+    tenantRole: TenantRole
+}, auth: AuthContext) {
+    assertAdmin(auth)
+
+    return prisma.$transaction(async (tx) => {
+        const [user, tenant, activeMemberships] = await Promise.all([
+            tx.user.findUnique({
+                where: { id: input.userId },
+                select: { id: true, role: true },
+            }),
+            tx.tenant.findUnique({
+                where: { id: input.tenantId },
+                select: { id: true },
+            }),
+            tx.tenantMembership.findMany({
+                where: { userId: input.userId, isActive: true },
+                select: { tenantId: true },
+            }),
+        ])
+
+        if (!user || !tenant) {
+            throw new Error('Uživatel nebo cílový tenant neexistuje.')
+        }
+
+        if (user.role === 'ADMIN') {
+            throw new Error('Admin aplikace má přístup ke všem tenantům a nelze ho přesouvat.')
+        }
+
+        const previousTenantIds = activeMemberships
+            .map((membership) => membership.tenantId)
+            .filter((tenantId) => tenantId !== input.tenantId)
+
+        if (previousTenantIds.length === 0 && activeMemberships.length > 0) {
+            throw new Error('Uživatel už je členem vybraného tenantu.')
+        }
+
+        if (previousTenantIds.length > 0) {
+            const now = new Date()
+            const [upcomingServiceAssignments, upcomingCalendarEntries] =
+                await Promise.all([
+                    tx.eventServiceItemAssignment.count({
+                        where: {
+                            userId: input.userId,
+                            tenantId: { in: previousTenantIds },
+                            eventServiceItem: {
+                                event: {
+                                    dateStart: { gte: now },
+                                    status: { in: ['DRAFT', 'CONFIRMED'] },
+                                },
+                            },
+                        },
+                    }),
+                    tx.calendarEntryParticipant.count({
+                        where: {
+                            userId: input.userId,
+                            tenantId: { in: previousTenantIds },
+                            calendarEntry: {
+                                dateStart: { gte: now },
+                            },
+                        },
+                    }),
+                ])
+
+            if (upcomingServiceAssignments || upcomingCalendarEntries) {
+                throw new Error(
+                    `Před přesunem předej budoucí úkoly v původním tenantu: ${upcomingServiceAssignments} přiřazení ke službám a ${upcomingCalendarEntries} účastí v kalendáři.`
+                )
+            }
+        }
+
+        await tx.tenantMembership.updateMany({
+            where: {
+                userId: input.userId,
+                isActive: true,
+                tenantId: { not: input.tenantId },
+            },
+            data: { isActive: false },
+        })
+
+        await tx.tenantMembership.upsert({
+            where: {
+                tenantId_userId: {
+                    tenantId: input.tenantId,
+                    userId: input.userId,
+                },
+            },
+            create: {
+                tenantId: input.tenantId,
+                userId: input.userId,
+                role: input.tenantRole,
+                isActive: true,
+            },
+            update: {
+                role: input.tenantRole,
+                isActive: true,
+            },
+        })
+
+        await tx.user.update({
+            where: { id: input.userId },
+            data: { role: input.tenantRole },
+        })
+    })
+}
+
 export async function setUserActive(input: {
     userId: string
     isActive: boolean

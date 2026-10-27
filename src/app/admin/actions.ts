@@ -9,6 +9,7 @@ import {
     createTenant,
     resetUserPassword,
     setUserActive,
+    transferUserToTenant,
 } from '@/modules/admin/admin.service'
 import { assertPasswordPolicy } from '@/lib/auth/password-policy'
 
@@ -110,6 +111,43 @@ export async function setUserActiveAction(args: SetUserActiveActionArgs) {
     await setUserActive(args, auth)
     revalidatePath('/admin')
     redirect('/admin')
+}
+
+export async function transferUserToTenantAction(formData: FormData) {
+    let errorMessage: string | null = null
+
+    try {
+        const auth = await requireAdminContext()
+        const userId = String(formData.get('userId') ?? '').trim()
+        const tenantId = String(formData.get('tenantId') ?? '').trim()
+        const tenantRoleRaw = String(formData.get('tenantRole') ?? '')
+
+        if (!userId || !tenantId) {
+            throw new Error('Vyber uživatele a cílový tenant.')
+        }
+
+        if (tenantRoleRaw !== 'MANAGER' && tenantRoleRaw !== 'WORKER') {
+            throw new Error('Vyber platnou roli v tenantu.')
+        }
+
+        await transferUserToTenant(
+            { userId, tenantId, tenantRole: tenantRoleRaw },
+            auth
+        )
+        revalidatePath('/admin')
+        revalidatePath('/settings/users')
+    } catch (error) {
+        errorMessage =
+            error instanceof Error
+                ? error.message
+                : 'Uživatele se nepodařilo přesunout.'
+    }
+
+    if (errorMessage) {
+        redirect(`/admin?error=${encodeURIComponent(errorMessage)}`)
+    }
+
+    redirect('/admin?success=UzivatelBylPresunut')
 }
 
 type ResetUserPasswordActionArgs = {

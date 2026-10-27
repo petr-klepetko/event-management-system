@@ -15,6 +15,7 @@ import {
     createTenantAction,
     resetUserPasswordAction,
     setUserActiveAction,
+    transferUserToTenantAction,
 } from './actions'
 
 type AdminPageProps = {
@@ -32,6 +33,8 @@ function successMessage(code?: string) {
             return 'Uživatel byl vytvořen.'
         case 'HesloByloZmeneno':
             return 'Heslo bylo změněno.'
+        case 'UzivatelBylPresunut':
+            return 'Uživatel byl přesunut do vybraného tenantu.'
         default:
             return null
     }
@@ -42,6 +45,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     const auth = await requireAdminContext()
     const overview = await getAdminOverview(auth)
     const message = successMessage(success)
+    const currentTenantsByUser = new Map<string, string[]>()
+    for (const membership of overview.memberships) {
+        if (membership.isActive) {
+            const names = currentTenantsByUser.get(membership.userId) ?? []
+            names.push(membership.tenant.name)
+            currentTenantsByUser.set(membership.userId, names)
+        }
+    }
 
     return (
         <main className="mx-auto max-w-6xl p-4 sm:p-8">
@@ -231,6 +242,105 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </section>
 
             <section className="mt-8 rounded-xl border p-4 sm:p-6">
+                <h2 className="text-xl font-semibold">Přesunout uživatele</h2>
+                <p className="mt-2 text-sm text-gray-600">
+                    Historické záznamy zůstanou v původním tenantu. Budoucí
+                    přiřazení ke službám a účasti v kalendáři je potřeba nejdřív
+                    předat jinému uživateli.
+                </p>
+                <form action={transferUserToTenantAction} className="mt-4 grid gap-4">
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="grid gap-2">
+                            <label htmlFor="transferUserId" className="font-medium">
+                                Uživatel
+                            </label>
+                            <select
+                                id="transferUserId"
+                                name="userId"
+                                defaultValue=""
+                                required
+                                className={inputClass}
+                            >
+                                <option className={optionClass} value="">
+                                    Vyber uživatele
+                                </option>
+                                {overview.users
+                                    .filter((user) => user.role !== 'ADMIN')
+                                    .map((user) => (
+                                        <option
+                                            className={optionClass}
+                                            key={user.id}
+                                            value={user.id}
+                                        >
+                                            {user.fullName} ({user.email}) —{' '}
+                                            {currentTenantsByUser
+                                                .get(user.id)
+                                                ?.join(', ') ?? 'Bez tenantu'};{' '}
+                                            {user.role === 'MANAGER'
+                                                ? 'Správce skupiny'
+                                                : 'Pracovník'}
+                                        </option>
+                                    ))}
+                            </select>
+                        </div>
+                        <div className="grid gap-2">
+                            <label htmlFor="transferTenantId" className="font-medium">
+                                Cílový tenant
+                            </label>
+                            <select
+                                id="transferTenantId"
+                                name="tenantId"
+                                defaultValue=""
+                                required
+                                className={inputClass}
+                            >
+                                <option className={optionClass} value="">
+                                    Vyber tenant
+                                </option>
+                                {overview.tenants.map((tenant) => (
+                                    <option
+                                        className={optionClass}
+                                        key={tenant.id}
+                                        value={tenant.id}
+                                    >
+                                        {tenant.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="grid gap-2">
+                            <label htmlFor="transferTenantRole" className="font-medium">
+                                Role v cílovém tenantu
+                            </label>
+                            <select
+                                id="transferTenantRole"
+                                name="tenantRole"
+                                defaultValue=""
+                                required
+                                className={inputClass}
+                            >
+                                <option className={optionClass} value="">
+                                    Vyber roli
+                                </option>
+                                <option className={optionClass} value="WORKER">
+                                    Pracovník
+                                </option>
+                                <option className={optionClass} value="MANAGER">
+                                    Správce skupiny
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <ConfirmSubmitButton
+                        confirmMessage="Opravdu chceš přesunout uživatele do vybraného tenantu?"
+                        className={primaryButtonClass}
+                    >
+                        Přesunout uživatele
+                    </ConfirmSubmitButton>
+                </form>
+            </section>
+
+            <section className="mt-8 rounded-xl border p-4 sm:p-6">
                 <h2 className="text-xl font-semibold">Uživatelé</h2>
 
                 <ClientSideListFilter
@@ -259,6 +369,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                             user.fullName,
                             user.email,
                             user.role,
+                            ...(currentTenantsByUser.get(user.id) ?? []),
                             user.isActive ? 'aktivní' : 'vypnutý',
                         ].join(' ')
 
@@ -279,6 +390,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 </div>
 
                                 <dl className="mt-4 grid gap-3 text-sm">
+                                    <div>
+                                        <dt className="font-medium text-gray-500">Tenant</dt>
+                                        <dd className="mt-1">
+                                            {currentTenantsByUser.get(user.id)?.join(', ') ??
+                                                'Bez tenantu'}
+                                        </dd>
+                                    </div>
                                     <div>
                                         <dt className="font-medium text-gray-500">Role</dt>
                                         <dd className="mt-1">{user.role}</dd>
@@ -340,6 +458,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                             <tr className="border-b text-left">
                                 <th className="py-2 px-2">Jméno</th>
                                 <th className="py-2 px-2">Login</th>
+                                <th className="py-2 px-2">Tenant</th>
                                 <th className="py-2 px-2">Role</th>
                                 <th className="py-2 px-2">Stav</th>
                                 <th className="py-2 px-2">Reset hesla</th>
@@ -360,6 +479,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                     user.fullName,
                                     user.email,
                                     user.role,
+                                    ...(currentTenantsByUser.get(user.id) ?? []),
                                     user.isActive ? 'aktivní' : 'vypnutý',
                                 ].join(' ')
 
@@ -375,6 +495,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                         </td>
                                         <td className="py-2 px-2">
                                             {user.email}
+                                        </td>
+                                        <td className="py-2 px-2">
+                                            {currentTenantsByUser.get(user.id)?.join(', ') ??
+                                                'Bez tenantu'}
                                         </td>
                                         <td className="py-2 px-2">
                                             {user.role}
