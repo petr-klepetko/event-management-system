@@ -89,7 +89,7 @@ export async function createAdminManagedUser(input: {
     return user
 }
 
-export async function transferUserToTenant(input: {
+export async function updateUserMembership(input: {
     userId: string
     tenantId: string
     tenantRole: TenantRole
@@ -123,10 +123,6 @@ export async function transferUserToTenant(input: {
         const previousTenantIds = activeMemberships
             .map((membership) => membership.tenantId)
             .filter((tenantId) => tenantId !== input.tenantId)
-
-        if (previousTenantIds.length === 0 && activeMemberships.length > 0) {
-            throw new Error('Uživatel už je členem vybraného tenantu.')
-        }
 
         if (previousTenantIds.length > 0) {
             const now = new Date()
