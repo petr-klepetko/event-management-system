@@ -133,6 +133,36 @@ function formatMonth(date: Date) {
     }).format(date)
 }
 
+function formatDay(date: Date) {
+    return new Intl.DateTimeFormat('cs-CZ', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    }).format(date)
+}
+
+function getDefaultSelectedDayKey(monthAnchor: Date, items: CalendarItem[]) {
+    const today = new Date()
+    if (
+        today.getFullYear() === monthAnchor.getFullYear() &&
+        today.getMonth() === monthAnchor.getMonth()
+    ) {
+        return formatDayKey(today)
+    }
+
+    const firstItem = items
+        .map(parseItemDate)
+        .filter(
+            (date) =>
+                date.getFullYear() === monthAnchor.getFullYear() &&
+                date.getMonth() === monthAnchor.getMonth()
+        )
+        .sort((a, b) => a.getTime() - b.getTime())[0]
+
+    return formatDayKey(firstItem ?? monthAnchor)
+}
+
 function getYearOptions(items: CalendarItem[]) {
     const currentYear = new Date().getFullYear()
     const itemYears = items.map((item) => parseItemDate(item).getFullYear())
@@ -167,6 +197,9 @@ export default function EventsMonthCalendar({ items }: EventsMonthCalendarProps)
     const [selectedYear, setSelectedYear] = useState(
         initialMonthAnchor.getFullYear()
     )
+    const [selectedDayKey, setSelectedDayKey] = useState(() =>
+        getDefaultSelectedDayKey(initialMonthAnchor, items)
+    )
     const [activeTooltip, setActiveTooltip] = useState<{
         item: CalendarItem
         x: number
@@ -197,11 +230,32 @@ export default function EventsMonthCalendar({ items }: EventsMonthCalendarProps)
         return groupedItems
     }, [items])
 
-    function changeMonth(offset: number) {
-        const nextMonth = new Date(selectedYear, selectedMonth + offset, 1)
+    const selectedDay =
+        calendarDays.find((day) => formatDayKey(day) === selectedDayKey) ??
+        monthAnchor
+    const selectedDayItems = itemsByDay.get(formatDayKey(selectedDay)) ?? []
 
+    function selectMonth(year: number, month: number) {
+        const nextMonth = new Date(year, month, 1)
         setSelectedMonth(nextMonth.getMonth())
         setSelectedYear(nextMonth.getFullYear())
+        setSelectedDayKey(getDefaultSelectedDayKey(nextMonth, items))
+    }
+
+    function changeMonth(offset: number) {
+        const nextMonth = new Date(selectedYear, selectedMonth + offset, 1)
+        selectMonth(nextMonth.getFullYear(), nextMonth.getMonth())
+    }
+
+    function selectDay(day: Date) {
+        if (
+            day.getMonth() !== selectedMonth ||
+            day.getFullYear() !== selectedYear
+        ) {
+            setSelectedMonth(day.getMonth())
+            setSelectedYear(day.getFullYear())
+        }
+        setSelectedDayKey(formatDayKey(day))
     }
 
     function showTooltip(item: CalendarItem, element: HTMLElement) {
@@ -230,20 +284,20 @@ export default function EventsMonthCalendar({ items }: EventsMonthCalendarProps)
                     </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
                     <button
                         type="button"
                         onClick={() => changeMonth(-1)}
-                        className="rounded-md border px-3 py-2 text-sm font-medium"
+                        className="order-1 rounded-md border px-3 py-2 text-sm font-medium sm:order-none"
                     >
                         Předchozí
                     </button>
                     <select
                         value={selectedMonth}
                         onChange={(event) =>
-                            setSelectedMonth(Number(event.target.value))
+                            selectMonth(selectedYear, Number(event.target.value))
                         }
-                        className={inputClass}
+                        className={`${inputClass} order-3 min-w-0 w-full sm:order-none sm:w-auto`}
                         aria-label="Měsíc"
                     >
                         {monthOptions.map((month, index) => (
@@ -255,9 +309,9 @@ export default function EventsMonthCalendar({ items }: EventsMonthCalendarProps)
                     <select
                         value={selectedYear}
                         onChange={(event) =>
-                            setSelectedYear(Number(event.target.value))
+                            selectMonth(Number(event.target.value), selectedMonth)
                         }
-                        className={inputClass}
+                        className={`${inputClass} order-4 min-w-0 w-full sm:order-none sm:w-auto`}
                         aria-label="Rok"
                     >
                         {yearOptions.map((year) => (
@@ -269,19 +323,19 @@ export default function EventsMonthCalendar({ items }: EventsMonthCalendarProps)
                     <button
                         type="button"
                         onClick={() => changeMonth(1)}
-                        className="rounded-md border px-3 py-2 text-sm font-medium"
+                        className="order-2 rounded-md border px-3 py-2 text-sm font-medium sm:order-none"
                     >
                         Další
                     </button>
                 </div>
             </div>
 
-            <div className="mt-4 overflow-x-auto pb-2">
-                <div className="grid min-w-[44rem] grid-cols-7 gap-px rounded-lg border border-slate-200 bg-slate-200">
+            <div className="mt-4">
+                <div className="grid min-w-0 grid-cols-7 gap-0.5 rounded-lg sm:gap-px sm:overflow-hidden sm:border sm:border-slate-200 sm:bg-slate-200">
                     {dayLabels.map((dayLabel) => (
                         <div
                             key={dayLabel}
-                            className="bg-slate-50 px-2 py-2 text-center text-xs font-semibold text-gray-500"
+                            className="min-w-0 px-0.5 py-2 text-center text-xs font-semibold text-gray-500 sm:bg-slate-50 sm:px-2"
                         >
                             {dayLabel}
                         </div>
@@ -293,27 +347,65 @@ export default function EventsMonthCalendar({ items }: EventsMonthCalendarProps)
                         const isCurrentMonth =
                             day.getMonth() === monthAnchor.getMonth()
                         const isToday = dayKey === formatDayKey(new Date())
+                        const dayNumberClass = `h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                            isToday
+                                ? 'bg-teal-700 text-white'
+                                : isCurrentMonth
+                                  ? 'text-gray-600'
+                                  : 'text-gray-400'
+                        }`
 
                         return (
                             <div
                                 key={dayKey}
-                                className={`min-h-32 min-w-0 p-2 ${
-                                    isCurrentMonth ? 'bg-white' : 'bg-slate-50'
+                                className={`min-h-20 min-w-0 rounded-md p-0.5 sm:min-h-32 sm:rounded-none sm:p-2 ${
+                                    isCurrentMonth
+                                        ? dayItems.length > 0
+                                            ? 'bg-white sm:bg-white'
+                                            : 'bg-slate-50 sm:bg-white'
+                                        : 'bg-slate-100 sm:bg-slate-50'
                                 }`}
                             >
-                                <div
-                                    className={`mb-2 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                                        isToday
-                                            ? 'bg-teal-700 text-white'
-                                            : isCurrentMonth
-                                              ? 'text-gray-600'
-                                              : 'text-gray-400'
+                                <button
+                                    type="button"
+                                    onClick={() => selectDay(day)}
+                                    aria-label={`${formatDay(day)}, počet položek: ${dayItems.length}`}
+                                    aria-pressed={selectedDayKey === dayKey}
+                                    className={`flex min-h-18 w-full flex-col items-start rounded-md p-0.5 text-left sm:hidden ${
+                                        selectedDayKey === dayKey
+                                            ? 'bg-teal-50 ring-1 ring-inset ring-teal-700'
+                                            : ''
                                     }`}
                                 >
+                                    <span className={`flex ${dayNumberClass}`}>
+                                        {day.getDate()}
+                                    </span>
+                                    <span aria-hidden="true" className="mt-1 flex w-full flex-col gap-0.5">
+                                        {dayItems.slice(0, 2).map((item) => (
+                                            <span
+                                                key={`${item.kind}-${item.id}`}
+                                                className={`block h-4 w-full truncate rounded-sm border px-0.5 text-[0.6rem] font-semibold leading-[0.875rem] ${
+                                                    item.kind === 'CALENDAR_ENTRY'
+                                                        ? 'border-indigo-200 bg-indigo-100 text-indigo-900'
+                                                        : 'border-teal-200 bg-teal-100 text-teal-900'
+                                                }`}
+                                            >
+                                                {item.title}
+                                            </span>
+                                        ))}
+                                    </span>
+                                    {dayItems.length > 2 ? (
+                                        <span className="mt-0.5 text-[0.65rem] font-bold leading-none text-gray-700">
+                                            +{dayItems.length - 2}
+                                        </span>
+                                    ) : null}
+                                </button>
+
+                                <div className={`${dayNumberClass} mb-2 hidden sm:flex`}>
                                     {day.getDate()}
                                 </div>
 
-                                <div className="grid min-w-0 gap-1">
+                                <div className="hidden min-w-0 gap-1 sm:grid">
                                     {dayItems.map((item) => {
                                         const dateStart = parseItemDate(item)
                                         return (
@@ -356,6 +448,38 @@ export default function EventsMonthCalendar({ items }: EventsMonthCalendarProps)
                         )
                     })}
                 </div>
+            </div>
+
+            <div className="mt-4 sm:hidden">
+                <h3 className="text-sm font-semibold capitalize">
+                    {formatDay(selectedDay)}
+                </h3>
+                {selectedDayItems.length === 0 ? (
+                    <p className="mt-2 text-sm text-gray-600">
+                        Na tento den nejsou naplánované žádné položky.
+                    </p>
+                ) : (
+                    <div className="mt-2 grid gap-2">
+                        {selectedDayItems.map((item) => (
+                            <Link
+                                key={`${item.kind}-${item.id}`}
+                                href={item.href}
+                                className={`block min-w-0 rounded-lg border p-3 text-sm ${
+                                    item.kind === 'CALENDAR_ENTRY'
+                                        ? 'border-indigo-100 bg-indigo-50 text-indigo-950'
+                                        : 'border-teal-100 bg-teal-50 text-teal-900'
+                                }`}
+                            >
+                                <span className={`block text-xs ${getItemTimeClass(item.kind)}`}>
+                                    {formatTime(parseItemDate(item))} · {item.eyebrow}
+                                </span>
+                                <span className="mt-1 block break-words font-medium">
+                                    {item.title}
+                                </span>
+                            </Link>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {activeTooltip ? (
