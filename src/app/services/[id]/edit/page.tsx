@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import PersistedForm from '@/components/forms/PersistedForm'
+import PriceInput from '@/components/forms/PriceInput'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { getServiceCatalogItemById } from '@/modules/services/service-catalog.service'
 import { updateServiceCatalogItemAction } from '../../actions'
@@ -83,10 +84,9 @@ export default async function EditServiceCatalogItemPage({
                         <label htmlFor="defaultPrice" className="font-medium">
                             Výchozí cena
                         </label>
-                        <input
+                        <PriceInput
                             id="defaultPrice"
                             name="defaultPrice"
-                            type="text"
                             required
                             defaultValue={service.defaultPrice.toString()}
                             className={inputClass}

@@ -15,6 +15,7 @@ import ConfirmSubmitButton from '@/components/forms/ConfirmSubmitButton'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import ClientSideListFilter from '@/components/filters/ClientSideListFilter'
 import PersistedForm from '@/components/forms/PersistedForm'
+import PriceInput from '@/components/forms/PriceInput'
 import {
     compactSecondaryButtonClass,
     inputClass,
@@ -53,11 +54,12 @@ function mapAssignmentRoleToLabel(role: 'RESPONSIBLE' | 'WORKER') {
 
 function getAssignmentDisplayName(assignment: {
     supplierName: string | null
+    costName: string | null
     user: {
         fullName: string
     } | null
 }) {
-    return assignment.user?.fullName ?? assignment.supplierName ?? 'Externí dodavatel'
+    return assignment.costName ?? assignment.user?.fullName ?? assignment.supplierName ?? 'Externí dodavatel'
 }
 
 function getEventClientName(event: {
@@ -288,12 +290,20 @@ export default async function EventDetailPage({
                         {isWorker ? 'Moje služby na akci' : 'Služby na akci'}
                     </h2>
                     {canManageEvent ? (
-                        <Link
-                            href={`/events/${event.id}/services/new`}
-                            className={primaryButtonClass}
-                        >
-                            Přidat službu
-                        </Link>
+                        <div className="flex flex-wrap gap-2">
+                            <Link
+                                href={`/events/${event.id}/services/new`}
+                                className={primaryButtonClass}
+                            >
+                                Přidat službu
+                            </Link>
+                            <Link
+                                href={`/events/${event.id}/services/bulk`}
+                                className={secondaryButtonClass}
+                            >
+                                Hromadné přidání služeb
+                            </Link>
+                        </div>
                     ) : null}
                 </div>
 
@@ -306,6 +316,12 @@ export default async function EventDetailPage({
                 {success === 'SluzbaBylaPridana' ? (
                     <p className="mt-4 rounded-md border border-green-500/40 px-4 py-3 text-sm text-green-300">
                         Služba byla přidána na akci.
+                    </p>
+                ) : null}
+
+                {success === 'SluzbyBylyPridany' ? (
+                    <p className="mt-4 rounded-md border border-green-500/40 px-4 py-3 text-sm text-green-700">
+                        Vybrané služby byly přidány na akci.
                     </p>
                 ) : null}
 
@@ -484,7 +500,7 @@ export default async function EventDetailPage({
                                                     {formatPrice(item.price.toString())}
                                                 </p>
                                                 <p className="mt-1 text-sm text-gray-600">
-                                                    Náklady: {formatPrice(itemFinance.workerCosts)}
+                                                    Náklady: {formatPrice(itemFinance.serviceCosts)}
                                                 </p>
                                                 <p
                                                     className={`mt-1 text-sm font-medium ${itemFinance.margin < 0
@@ -522,7 +538,7 @@ export default async function EventDetailPage({
                                             </div>
                                             <div>
                                                 <dt className="font-medium text-gray-500">
-                                                    Pracovníci / dodavatelé
+                                                    Náklady
                                                 </dt>
                                                 <dd className="mt-1">
                                                     {item.assignments.length === 0 ? (
@@ -538,11 +554,11 @@ export default async function EventDetailPage({
                                                                         <p className="font-medium">
                                                                             {getAssignmentDisplayName(assignment)}
                                                                         </p>
-                                                                        <p className="mt-1 text-sm text-gray-600">
-                                                                            {mapAssignmentRoleToLabel(
-                                                                                assignment.role
-                                                                            )}
-                                                                        </p>
+                                                                        {assignment.costName ? null : (
+                                                                            <p className="mt-1 text-sm text-gray-600">
+                                                                                {mapAssignmentRoleToLabel(assignment.role)}
+                                                                            </p>
+                                                                        )}
                                                                         {assignment.workDescription ? (
                                                                             <p className="mt-1 whitespace-pre-wrap">
                                                                                 {
@@ -551,7 +567,7 @@ export default async function EventDetailPage({
                                                                             </p>
                                                                         ) : null}
                                                                         <p className="mt-1">
-                                                                            Odměna:{' '}
+                                                                            {assignment.costName ? 'Cena' : 'Odměna'}:{' '}
                                                                             {formatPrice(
                                                                                 assignment.reward.toString()
                                                                             )}
@@ -593,7 +609,7 @@ export default async function EventDetailPage({
                                 <thead>
                                     <tr className="border-b text-left">
                                         <th className="w-[24%] py-2 px-2">Název</th>
-                                        <th className="w-[22%] py-2 px-2">Pracovníci / dodavatelé</th>
+                                        <th className="w-[22%] py-2 px-2">Nákladové položky</th>
                                         <th className="w-[12%] py-2 px-2 text-right">Cena</th>
                                         <th className="w-[12%] py-2 px-2 text-right">Náklady</th>
                                         <th className="w-[12%] py-2 px-2 text-right">Marže</th>
@@ -691,7 +707,7 @@ export default async function EventDetailPage({
                                                                                 {getAssignmentDisplayName(assignment)}
                                                                             </span>
                                                                             <span className="mt-2 grid gap-1">
-                                                                                <span>
+                                                                                {!assignment.costName ? <span>
                                                                                     <span className="block text-gray-500">
                                                                                         Role
                                                                                     </span>
@@ -700,10 +716,10 @@ export default async function EventDetailPage({
                                                                                             assignment.role
                                                                                         )}
                                                                                     </span>
-                                                                                </span>
+                                                                                </span> : null}
                                                                                 <span>
                                                                                     <span className="block text-gray-500">
-                                                                                        Popis práce
+                                                                                        {assignment.costName ? 'Popis nákladu' : 'Popis práce'}
                                                                                     </span>
                                                                                     <span>
                                                                                         {assignment.workDescription ??
@@ -712,7 +728,7 @@ export default async function EventDetailPage({
                                                                                 </span>
                                                                                 <span>
                                                                                     <span className="block text-gray-500">
-                                                                                        Odměna
+                                                                                        {assignment.costName ? 'Cena' : 'Odměna'}
                                                                                     </span>
                                                                                     <span>
                                                                                         {formatPrice(
@@ -732,7 +748,7 @@ export default async function EventDetailPage({
                                                     {formatPrice(item.price.toString())}
                                                 </td>
                                                 <td className="whitespace-nowrap py-2 px-2 text-right">
-                                                    {formatPrice(itemFinance.workerCosts)}
+                                                    {formatPrice(itemFinance.serviceCosts)}
                                                 </td>
                                                 <td
                                                     className={`whitespace-nowrap py-2 px-2 text-right font-medium ${itemFinance.margin < 0
@@ -780,7 +796,7 @@ export default async function EventDetailPage({
                         <div>
                             <h2 className="text-xl font-semibold">Náklady</h2>
                             <p className="mt-1 text-sm text-gray-600">
-                                Ruční výdaje akce mimo odměny pracovníků.
+                                Samostatné výdaje akce mimo náklady uvedené u jednotlivých služeb.
                             </p>
                         </div>
                     </div>
@@ -820,12 +836,9 @@ export default async function EventDetailPage({
                                 <label htmlFor="costAmount" className="text-sm font-medium">
                                     Částka
                                 </label>
-                                <input
+                                <PriceInput
                                     id="costAmount"
                                     name="costAmount"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
                                     required
                                     className={`${inputClass} text-right`}
                                     placeholder="0"

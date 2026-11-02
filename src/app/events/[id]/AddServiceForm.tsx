@@ -3,6 +3,8 @@
 import SearchableSelect from '@/components/forms/SearchableSelect'
 import EventServiceAssignmentsEditor from '@/components/forms/EventServiceAssignmentsEditor'
 import PersistedForm from '@/components/forms/PersistedForm'
+import PriceInput from '@/components/forms/PriceInput'
+import { formatEditablePrice } from '@/lib/money'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { useState } from 'react'
 
@@ -44,7 +46,7 @@ export default function AddServiceForm({
         }
 
         setCustomName(item.name)
-        setPrice(item.defaultPrice)
+        setPrice(formatEditablePrice(item.defaultPrice))
         setDescription(item.defaultDescription)
     }
 
@@ -86,10 +88,11 @@ export default function AddServiceForm({
 
                 <div className="grid gap-2">
                     <label className="font-medium">Cena</label>
-                    <input
+                    <PriceInput
                         name="price"
                         value={price}
                         onChange={(e) => setPrice(e.target.value)}
+                        onValueChange={setPrice}
                         required
                         className={inputClass}
                     />

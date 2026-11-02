@@ -304,6 +304,7 @@ model EventServiceItemAssignment {
   eventServiceItemId String
   userId             String?
   supplierName       String?
+  costName           String?
   role               EventServiceAssignmentRole @default(WORKER)
   workDescription    String?
   reward             Decimal          @db.Decimal(10, 2)

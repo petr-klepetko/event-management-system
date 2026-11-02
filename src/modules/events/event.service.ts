@@ -47,15 +47,15 @@ export function calculateEventServiceItemFinance(
     item: EventServiceItemFinanceInput
 ) {
     const price = Number(item.price.toString())
-    const workerCosts = item.assignments.reduce(
+    const serviceCosts = item.assignments.reduce(
         (sum, assignment) => sum + Number(assignment.reward.toString()),
         0
     )
 
     return {
         price,
-        workerCosts,
-        margin: price - workerCosts,
+        serviceCosts,
+        margin: price - serviceCosts,
     }
 }
 
@@ -66,23 +66,23 @@ export function calculateEventFinance(event: EventFinanceInput) {
 
             return {
                 invoicePrice: totals.invoicePrice + itemFinance.price,
-                workerCosts: totals.workerCosts + itemFinance.workerCosts,
+                serviceCosts: totals.serviceCosts + itemFinance.serviceCosts,
             }
         },
         {
             invoicePrice: 0,
-            workerCosts: 0,
+            serviceCosts: 0,
         }
     )
     const eventCosts = event.costs.reduce(
         (sum, cost) => sum + Number(cost.amount.toString()),
         0
     )
-    const costs = serviceTotals.workerCosts + eventCosts
+    const costs = serviceTotals.serviceCosts + eventCosts
 
     return {
         invoicePrice: serviceTotals.invoicePrice,
-        workerCosts: serviceTotals.workerCosts,
+        serviceCosts: serviceTotals.serviceCosts,
         eventCosts,
         costs,
         profit: serviceTotals.invoicePrice - costs,

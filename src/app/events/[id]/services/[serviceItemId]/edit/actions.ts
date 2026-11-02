@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { updateEventServiceItem } from '@/modules/event-services/event-service.service'
 import { requireTenantManagerContext } from '@/lib/auth/current-user'
 import { readEventServiceAssignments } from '../../../service-assignment-form'
+import { parseNonNegativePrice } from '@/lib/money'
 
 type UpdateEventServiceItemActionArgs = {
     eventId: string
@@ -30,23 +31,14 @@ export async function updateEventServiceItemAction(
             throw new Error('Název služby je povinný.')
         }
 
-        if (!price) {
-            throw new Error('Cena je povinná.')
-        }
-
-        const normalizedPrice = price.replace(',', '.')
-        const parsedPrice = Number(normalizedPrice)
-
-        if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
-            throw new Error('Cena musí být platné nezáporné číslo.')
-        }
+        const parsedPrice = parseNonNegativePrice(price, 'Cena')
 
         await updateEventServiceItem({
             id: args.serviceItemId,
             serviceCatalogItemId: serviceCatalogItemId || null,
             customName,
             description: description || null,
-            price: parsedPrice.toFixed(2),
+            price: parsedPrice,
             note: note || null,
             assignments,
         }, auth)

@@ -1,5 +1,6 @@
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import PersistedForm from '@/components/forms/PersistedForm'
+import PriceInput from '@/components/forms/PriceInput'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import { createServiceCatalogItemAction } from '../actions'
 import { requireTenantManagerContext } from '@/lib/auth/current-user'
@@ -62,10 +63,9 @@ export default async function NewServiceCatalogItemPage({
                         <label htmlFor="defaultPrice" className="font-medium">
                             Výchozí cena
                         </label>
-                        <input
+                        <PriceInput
                             id="defaultPrice"
                             name="defaultPrice"
-                            type="text"
                             required
                             className={inputClass}
                             placeholder="15000"

@@ -8,20 +8,10 @@ import {
     updateServiceCatalogItem,
 } from '@/modules/services/service-catalog.service'
 import { requireTenantManagerContext } from '@/lib/auth/current-user'
+import { parseNonNegativePrice } from '@/lib/money'
 
 function readTrimmedString(formData: FormData, key: string) {
     return String(formData.get(key) ?? '').trim()
-}
-
-function normalizePrice(rawPrice: string) {
-    const normalizedPrice = rawPrice.replace(',', '.')
-    const parsedPrice = Number(normalizedPrice)
-
-    if (!rawPrice || Number.isNaN(parsedPrice) || parsedPrice < 0) {
-        throw new Error('Cena musí být platné nezáporné číslo.')
-    }
-
-    return parsedPrice.toFixed(2)
 }
 
 export async function createServiceCatalogItemAction(formData: FormData) {
@@ -31,9 +21,7 @@ export async function createServiceCatalogItemAction(formData: FormData) {
     try {
         const name = readTrimmedString(formData, 'name')
         const description = readTrimmedString(formData, 'description')
-        const defaultPrice = normalizePrice(
-            readTrimmedString(formData, 'defaultPrice')
-        )
+        const defaultPrice = parseNonNegativePrice(readTrimmedString(formData, 'defaultPrice'), 'Cena')
 
         if (!name) {
             throw new Error('Název služby je povinný.')
@@ -74,9 +62,7 @@ export async function updateServiceCatalogItemAction(
     try {
         const name = readTrimmedString(formData, 'name')
         const description = readTrimmedString(formData, 'description')
-        const defaultPrice = normalizePrice(
-            readTrimmedString(formData, 'defaultPrice')
-        )
+        const defaultPrice = parseNonNegativePrice(readTrimmedString(formData, 'defaultPrice'), 'Cena')
 
         if (!name) {
             throw new Error('Název služby je povinný.')

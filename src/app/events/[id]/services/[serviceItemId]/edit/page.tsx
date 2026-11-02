@@ -8,6 +8,7 @@ import { updateEventServiceItemAction } from './actions'
 import EventServiceAssignmentsEditor from '@/components/forms/EventServiceAssignmentsEditor'
 import PersistedForm from '@/components/forms/PersistedForm'
 import SearchableSelect from '@/components/forms/SearchableSelect'
+import PriceInput from '@/components/forms/PriceInput'
 import { buttonClass, inputClass } from '@/lib/ui/styles'
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import { requireTenantManagerContext } from '@/lib/auth/current-user'
@@ -142,10 +143,9 @@ export default async function EditEventServiceItemPage({
                             <label htmlFor="price" className="font-medium">
                                 Cena
                             </label>
-                            <input
+                            <PriceInput
                                 id="price"
                                 name="price"
-                                type="text"
                                 required
                                 defaultValue={serviceItem.price.toString()}
                                 className={inputClass}
@@ -187,6 +187,7 @@ export default async function EditEventServiceItemPage({
                                 id: assignment.id,
                                 userId: assignment.userId,
                                 supplierName: assignment.supplierName,
+                                costName: assignment.costName,
                                 role: assignment.role,
                                 workDescription: assignment.workDescription,
                                 reward: assignment.reward.toString(),

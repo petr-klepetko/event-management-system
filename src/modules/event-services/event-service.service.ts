@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma'
-import { AuthContext, getTenantScopedWhere } from '@/lib/auth/current-user'
+import { AuthContext, canManageOwnedTenantData, getTenantScopedWhere } from '@/lib/auth/current-user'
 
 export type CreateEventServiceItemInput = {
   eventId: string
@@ -24,6 +24,7 @@ export type UpdateEventServiceItemInput = {
 export type EventServiceItemAssignmentInput = {
   userId?: string | null
   supplierName?: string | null
+  costName?: string | null
   role: 'RESPONSIBLE' | 'WORKER'
   workDescription?: string | null
   reward: string
@@ -198,9 +199,10 @@ async function assertAssignableUsers(
   assignments: EventServiceItemAssignmentInput[] = []
 ) {
   for (const assignment of assignments) {
-    if (!assignment.userId && !assignment.supplierName) {
+    const names = [assignment.userId, assignment.supplierName, assignment.costName].filter(Boolean)
+    if (names.length !== 1) {
       throw new Error(
-        'U každého řádku musí být vybraný pracovník nebo zadaný externí dodavatel.'
+        'U každého řádku vyber pracovníka, dodavatele nebo zadej náklad ke službě.'
       )
     }
   }
@@ -246,6 +248,7 @@ function mapAssignmentCreateData(
     eventServiceItemId,
     userId: assignment.userId || null,
     supplierName: assignment.supplierName ?? null,
+    costName: assignment.costName ?? null,
     role: assignment.role,
     workDescription: assignment.workDescription ?? null,
     reward: assignment.reward,
@@ -325,6 +328,58 @@ export async function createEventServiceItem(
     }
 
     return serviceItem
+  })
+}
+
+export async function createEventServiceItemsFromCatalog(
+  eventId: string,
+  catalogItemIds: string[],
+  auth: AuthContext
+) {
+  const uniqueIds = [...new Set(catalogItemIds)]
+
+  if (uniqueIds.length === 0) {
+    throw new Error('Vyber alespoň jednu službu.')
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const event = await tx.event.findFirst({
+      where: { id: eventId, ...getTenantScopedWhere(auth) },
+      select: { tenantId: true, ownerUserId: true },
+    })
+
+    if (!event || !canManageOwnedTenantData(auth, event.ownerUserId)) {
+      throw new Error('Akce neexistuje nebo k ní nemáš přístup.')
+    }
+
+    const catalogItems = await tx.serviceCatalogItem.findMany({
+      where: { id: { in: uniqueIds }, tenantId: event.tenantId, isActive: true },
+    })
+
+    if (catalogItems.length !== uniqueIds.length) {
+      throw new Error('Některá vybraná služba už není aktivní nebo nepatří k této akci.')
+    }
+
+    const existingCount = await tx.eventServiceItem.count({
+      where: { eventId, tenantId: event.tenantId },
+    })
+    const catalogById = new Map(catalogItems.map((item) => [item.id, item]))
+
+    await tx.eventServiceItem.createMany({
+      data: uniqueIds.map((id, index) => {
+        const item = catalogById.get(id)!
+        return {
+          tenantId: event.tenantId,
+          ownerUserId: event.ownerUserId ?? auth.userId,
+          eventId,
+          serviceCatalogItemId: item.id,
+          customName: item.name,
+          description: item.description,
+          price: item.defaultPrice,
+          sortOrder: existingCount + index,
+        }
+      }),
+    })
   })
 }
 

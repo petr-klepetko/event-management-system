@@ -6,6 +6,7 @@ import { createEventServiceItem, deleteEventServiceItem } from '@/modules/event-
 import { createEventCost, deleteEventCost } from '@/modules/event-costs/event-cost.service'
 import { requireTenantManagerContext } from '@/lib/auth/current-user'
 import { readEventServiceAssignments } from './service-assignment-form'
+import { parseNonNegativePrice } from '@/lib/money'
 
 type CreateEventServiceItemActionArgs = {
     eventId: string
@@ -44,23 +45,14 @@ export async function createEventServiceItemAction(
             throw new Error('Název služby je povinný.')
         }
 
-        if (!price) {
-            throw new Error('Cena je povinná.')
-        }
-
-        const normalizedPrice = price.replace(',', '.')
-        const parsedPrice = Number(normalizedPrice)
-
-        if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
-            throw new Error('Cena musí být platné nezáporné číslo.')
-        }
+        const parsedPrice = parseNonNegativePrice(price, 'Cena')
 
         await createEventServiceItem({
             eventId: args.eventId,
             serviceCatalogItemId: serviceCatalogItemId || null,
             customName,
             description: description || null,
-            price: parsedPrice.toFixed(2),
+            price: parsedPrice,
             note: note || null,
             assignments,
         }, auth)
@@ -123,21 +115,13 @@ export async function createEventCostAction(
             throw new Error('Název nákladu je povinný.')
         }
 
-        if (!amount) {
-            throw new Error('Částka nákladu je povinná.')
-        }
-
-        const parsedAmount = Number(amount.replace(',', '.'))
-
-        if (Number.isNaN(parsedAmount) || parsedAmount < 0) {
-            throw new Error('Částka nákladu musí být platné nezáporné číslo.')
-        }
+        const parsedAmount = parseNonNegativePrice(amount, 'Částka nákladu')
 
         await createEventCost(
             {
                 eventId: args.eventId,
                 name,
-                amount: parsedAmount.toFixed(2),
+                amount: parsedAmount,
                 note: note || null,
             },
             auth
